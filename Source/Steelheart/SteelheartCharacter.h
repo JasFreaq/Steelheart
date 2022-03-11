@@ -18,6 +18,7 @@ class ASteelheartCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
+	
 public:
 	ASteelheartCharacter();
 
@@ -30,10 +31,6 @@ public:
 	float BaseLookUpRate;
 
 protected:
-
-	/** Resets HMD orientation in VR. */
-	void OnResetVR();
-
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
 
@@ -52,13 +49,12 @@ protected:
 	 */
 	void LookUpAtRate(float Rate);
 
-	/** Handler for when a touch input begins. */
-	void TouchStarted(ETouchIndex::Type FingerIndex, FVector Location);
+	void HandleJumpInput();
+	
+	void Fly();
 
-	/** Handler for when a touch input stops. */
-	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
-
-protected:
+	void StopFlying();
+	
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// End of APawn interface

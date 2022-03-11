@@ -23,7 +23,7 @@ ASteelheartCharacter::ASteelheartCharacter()
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
 
 	// Configure character movement
@@ -54,9 +54,12 @@ void ASteelheartCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 {
 	// Set up gameplay key bindings
 	check(PlayerInputComponent);
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
+	
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASteelheartCharacter::HandleJumpInput);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+	PlayerInputComponent->BindAction("Jump", IE_DoubleClick, this, &ASteelheartCharacter::Fly);
 
+	
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASteelheartCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASteelheartCharacter::MoveRight);
 
@@ -67,35 +70,6 @@ void ASteelheartCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindAxis("TurnRate", this, &ASteelheartCharacter::TurnAtRate);
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ASteelheartCharacter::LookUpAtRate);
-
-	// handle touch devices
-	PlayerInputComponent->BindTouch(IE_Pressed, this, &ASteelheartCharacter::TouchStarted);
-	PlayerInputComponent->BindTouch(IE_Released, this, &ASteelheartCharacter::TouchStopped);
-
-	// VR headset functionality
-	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ASteelheartCharacter::OnResetVR);
-}
-
-
-void ASteelheartCharacter::OnResetVR()
-{
-	// If Steelheart is added to a project via 'Add Feature' in the Unreal Editor the dependency on HeadMountedDisplay in Steelheart.Build.cs is not automatically propagated
-	// and a linker error will result.
-	// You will need to either:
-	//		Add "HeadMountedDisplay" to [YourProject].Build.cs PublicDependencyModuleNames in order to build successfully (appropriate if supporting VR).
-	// or:
-	//		Comment or delete the call to ResetOrientationAndPosition below (appropriate if not supporting VR)
-	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
-}
-
-void ASteelheartCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
-{
-		Jump();
-}
-
-void ASteelheartCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
-{
-		StopJumping();
 }
 
 void ASteelheartCharacter::TurnAtRate(float Rate)
@@ -110,16 +84,49 @@ void ASteelheartCharacter::LookUpAtRate(float Rate)
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
 
+void ASteelheartCharacter::HandleJumpInput()
+{
+	if (GetCharacterMovement()->IsFlying())
+	{
+		StopFlying();
+	}
+	else
+	{
+		ACharacter::Jump();		
+	}
+}
+
+void ASteelheartCharacter::Fly()
+{
+	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+	//bUseControllerRotationYaw = true;
+}
+
+void ASteelheartCharacter::StopFlying()
+{
+	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+	//bUseControllerRotationYaw = false;
+}
+
 void ASteelheartCharacter::MoveForward(float Value)
 {
 	if ((Controller != nullptr) && (Value != 0.0f))
 	{
-		// find out which way is forward
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
+		FVector Direction;
+		if (GetCharacterMovement()->IsFlying())
+		{
+			Direction = FollowCamera->GetForwardVector();
+		}
+		else
+		{
+			// find out which way is forward
+			const FRotator Rotation = Controller->GetControlRotation();
+			const FRotator YawRotation(0, Rotation.Yaw, 0);
 
-		// get forward vector
-		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+			// get forward vector
+			Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		}
+		
 		AddMovementInput(Direction, Value);
 	}
 }
