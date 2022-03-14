@@ -31,6 +31,8 @@ public:
 	float BaseLookUpRate;
 
 protected:
+	virtual void Tick(float DeltaSeconds) override;
+	
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
 

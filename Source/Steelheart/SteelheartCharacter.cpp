@@ -23,7 +23,7 @@ ASteelheartCharacter::ASteelheartCharacter()
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = true;
+	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
 	// Configure character movement
@@ -31,6 +31,8 @@ ASteelheartCharacter::ASteelheartCharacter()
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
+
+	GetCharacterMovement()->BrakingDecelerationFlying = 500.f;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -92,20 +94,25 @@ void ASteelheartCharacter::HandleJumpInput()
 	}
 	else
 	{
-		ACharacter::Jump();		
+		Super::Jump();		
 	}
 }
 
 void ASteelheartCharacter::Fly()
 {
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-	//bUseControllerRotationYaw = true;
 }
 
 void ASteelheartCharacter::StopFlying()
 {
 	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
-	//bUseControllerRotationYaw = false;
+}
+
+void ASteelheartCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	GetCharacterMovement()->bUseControllerDesiredRotation = GetCharacterMovement()->Velocity.Size() > 0.f;
 }
 
 void ASteelheartCharacter::MoveForward(float Value)
