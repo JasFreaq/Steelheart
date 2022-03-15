@@ -6,33 +6,37 @@
 #include "GameFramework/Character.h"
 #include "SteelheartCharacter.generated.h"
 
-UCLASS(config=Game)
+UCLASS(config = Game)
 class ASteelheartCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class USpringArmComponent* CameraBoom;
+		class USpringArmComponent* CameraBoom;
 
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* FollowCamera;
+		class UCameraComponent* FollowCamera;
 	
 public:
 	ASteelheartCharacter();
 
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
-	float BaseTurnRate;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
+		float BaseTurnRate;
 
 	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
-	float BaseLookUpRate;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
+		float BaseLookUpRate;
 
 protected:
 	virtual void Tick(float DeltaSeconds) override;
-	
+
+	virtual void Landed(const FHitResult& Hit) override;
+
+	virtual void OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta) override;
+		
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
 
@@ -66,5 +70,22 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-};
 
+private:
+	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
+		UAnimMontage* SoftLandingMontage = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
+		UAnimMontage* MediumLandingMontage = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
+		UAnimMontage* HardLandingMontage = nullptr;
+	
+	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
+		float SoftLandingUpperLimit = 500.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
+		float HardLandingLowerLimit = 1200.f;
+	
+	float LandingInitiationLocationZ;
+};

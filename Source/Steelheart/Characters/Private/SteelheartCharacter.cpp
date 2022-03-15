@@ -1,13 +1,13 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "SteelheartCharacter.h"
-#include "HeadMountedDisplayFunctionLibrary.h"
+#include "Steelheart/Characters/Public/SteelheartCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ASteelheartCharacter
@@ -47,6 +47,16 @@ ASteelheartCharacter::ASteelheartCharacter()
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Lifecycle Functions
+
+void ASteelheartCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	GetCharacterMovement()->bUseControllerDesiredRotation = GetCharacterMovement()->Velocity.Size() > 0.f;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -106,13 +116,7 @@ void ASteelheartCharacter::Fly()
 void ASteelheartCharacter::StopFlying()
 {
 	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
-}
-
-void ASteelheartCharacter::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	GetCharacterMovement()->bUseControllerDesiredRotation = GetCharacterMovement()->Velocity.Size() > 0.f;
+	LandingInitiationLocationZ = GetActorLocation().Z;
 }
 
 void ASteelheartCharacter::MoveForward(float Value)
@@ -151,4 +155,41 @@ void ASteelheartCharacter::MoveRight(float Value)
 		// add movement in that direction
 		AddMovementInput(Direction, Value);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Locomotion Handling
+
+void ASteelheartCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+
+	if (GetCharacterMovement()->IsWalkable(Hit))
+	{
+		float FloorDistance = LandingInitiationLocationZ - GetActorLocation().Z;
+
+		if (FloorDistance <= SoftLandingUpperLimit)
+		{
+			if (ensure(SoftLandingMontage != nullptr))
+				PlayAnimMontage(SoftLandingMontage);
+		}
+		else if (FloorDistance > HardLandingLowerLimit)
+		{
+			if (ensure(HardLandingMontage != nullptr))
+				PlayAnimMontage(HardLandingMontage);
+		}
+		else // Medium Landing
+		{
+			if (ensure(MediumLandingMontage != nullptr))
+				PlayAnimMontage(MediumLandingMontage);
+		}
+	}
+}
+
+void ASteelheartCharacter::OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal,
+	const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta)
+{
+	LandingInitiationLocationZ = PreviousLocation.Z;
 }

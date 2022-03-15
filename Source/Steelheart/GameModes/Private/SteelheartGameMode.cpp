@@ -1,7 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "SteelheartGameMode.h"
-#include "SteelheartCharacter.h"
+#include "Steelheart/GameModes/Public/SteelheartGameMode.h"
 #include "UObject/ConstructorHelpers.h"
 
 ASteelheartGameMode::ASteelheartGameMode()
