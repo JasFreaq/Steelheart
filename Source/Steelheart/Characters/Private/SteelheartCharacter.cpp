@@ -32,7 +32,7 @@ ASteelheartCharacter::ASteelheartCharacter()
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
 
-	GetCharacterMovement()->BrakingDecelerationFlying = 500.f;
+	GetCharacterMovement()->BrakingDecelerationFlying = 1500.f;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -67,9 +67,8 @@ void ASteelheartCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	// Set up gameplay key bindings
 	check(PlayerInputComponent);
 	
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASteelheartCharacter::HandleJumpInput);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASteelheartCharacter::HandleFlyInput);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
-	PlayerInputComponent->BindAction("Jump", IE_DoubleClick, this, &ASteelheartCharacter::Fly);
 
 	
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASteelheartCharacter::MoveForward);
@@ -84,23 +83,16 @@ void ASteelheartCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ASteelheartCharacter::LookUpAtRate);
 }
 
-void ASteelheartCharacter::TurnAtRate(float Rate)
-{
-	// calculate delta for this frame from the rate information
-	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
-}
-
-void ASteelheartCharacter::LookUpAtRate(float Rate)
-{
-	// calculate delta for this frame from the rate information
-	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
-}
-
-void ASteelheartCharacter::HandleJumpInput()
+void ASteelheartCharacter::HandleFlyInput()
 {
 	if (GetCharacterMovement()->IsFlying())
 	{
 		StopFlying();
+	}
+	else if (GetCharacterMovement()->IsFalling())
+	{
+		Super::StopJumping();
+		Fly();
 	}
 	else
 	{
@@ -108,16 +100,8 @@ void ASteelheartCharacter::HandleJumpInput()
 	}
 }
 
-void ASteelheartCharacter::Fly()
-{
-	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-}
-
-void ASteelheartCharacter::StopFlying()
-{
-	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
-	LandingInitiationLocationZ = GetActorLocation().Z;
-}
+//////////////////////////////////////////////////////////////////////////
+// Locomotion Handling
 
 void ASteelheartCharacter::MoveForward(float Value)
 {
@@ -137,19 +121,19 @@ void ASteelheartCharacter::MoveForward(float Value)
 			// get forward vector
 			Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		}
-		
+
 		AddMovementInput(Direction, Value);
 	}
 }
 
 void ASteelheartCharacter::MoveRight(float Value)
 {
-	if ( (Controller != nullptr) && (Value != 0.0f) )
+	if ((Controller != nullptr) && (Value != 0.0f))
 	{
 		// find out which way is right
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
-	
+
 		// get right vector 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		// add movement in that direction
@@ -157,8 +141,28 @@ void ASteelheartCharacter::MoveRight(float Value)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Locomotion Handling
+void ASteelheartCharacter::TurnAtRate(float Rate)
+{
+	// calculate delta for this frame from the rate information
+	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+}
+
+void ASteelheartCharacter::LookUpAtRate(float Rate)
+{
+	// calculate delta for this frame from the rate information
+	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+}
+
+void ASteelheartCharacter::Fly()
+{
+	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+}
+
+void ASteelheartCharacter::StopFlying()
+{
+	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+	LandingInitiationLocationZ = GetActorLocation().Z;
+}
 
 void ASteelheartCharacter::Landed(const FHitResult& Hit)
 {
@@ -192,4 +196,9 @@ void ASteelheartCharacter::OnWalkingOffLedge_Implementation(const FVector& Previ
 	const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta)
 {
 	LandingInitiationLocationZ = PreviousLocation.Z;
+}
+
+void ASteelheartCharacter::Dash()
+{
+
 }

@@ -33,9 +33,11 @@ public:
 protected:
 	virtual void Tick(float DeltaSeconds) override;
 
-	virtual void Landed(const FHitResult& Hit) override;
+	// APawn interface
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	// End of APawn interface
 
-	virtual void OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta) override;
+	void HandleFlyInput();
 		
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
@@ -55,16 +57,16 @@ protected:
 	 */
 	void LookUpAtRate(float Rate);
 
-	void HandleJumpInput();
-	
 	void Fly();
 
 	void StopFlying();
-	
-	// APawn interface
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	// End of APawn interface
 
+	virtual void Landed(const FHitResult& Hit) override;
+
+	virtual void OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta) override;
+	
+	void Dash();
+		
 public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -88,4 +90,6 @@ private:
 		float HardLandingLowerLimit = 1200.f;
 	
 	float LandingInitiationLocationZ;
+
+	bool bIsDashing;
 };
