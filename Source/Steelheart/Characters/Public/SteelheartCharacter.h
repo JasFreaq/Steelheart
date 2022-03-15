@@ -30,6 +30,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
 		float BaseLookUpRate;
 
+	UPROPERTY(BlueprintReadOnly, Category = Locomotion)
+		bool bIsDashing;
+	
 protected:
 	virtual void Tick(float DeltaSeconds) override;
 
@@ -38,6 +41,8 @@ protected:
 	// End of APawn interface
 
 	void HandleFlyInput();
+	
+	void HandleDashInput();
 		
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
@@ -66,6 +71,8 @@ protected:
 	virtual void OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta) override;
 	
 	void Dash();
+
+	void StopDashing();
 		
 public:
 	/** Returns CameraBoom subobject **/
@@ -88,8 +95,11 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
 		float HardLandingLowerLimit = 1200.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
+		float FlightDashSpeed = 3000.f;
 	
 	float LandingInitiationLocationZ;
-
-	bool bIsDashing;
+		
+	float FlightBaseSpeed;
 };

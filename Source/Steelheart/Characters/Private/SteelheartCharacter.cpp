@@ -34,6 +34,8 @@ ASteelheartCharacter::ASteelheartCharacter()
 
 	GetCharacterMovement()->BrakingDecelerationFlying = 1500.f;
 
+	FlightBaseSpeed = GetCharacterMovement()->MaxFlySpeed;
+	
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
@@ -70,6 +72,7 @@ void ASteelheartCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ASteelheartCharacter::HandleFlyInput);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
+	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ASteelheartCharacter::HandleDashInput);
 	
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASteelheartCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASteelheartCharacter::MoveRight);
@@ -97,6 +100,18 @@ void ASteelheartCharacter::HandleFlyInput()
 	else
 	{
 		Super::Jump();		
+	}
+}
+
+void ASteelheartCharacter::HandleDashInput()
+{
+	if (bIsDashing)
+	{
+		StopDashing();
+	}
+	else
+	{
+		Dash();		
 	}
 }
 
@@ -200,5 +215,14 @@ void ASteelheartCharacter::OnWalkingOffLedge_Implementation(const FVector& Previ
 
 void ASteelheartCharacter::Dash()
 {
+	bIsDashing = true;
 
+	GetCharacterMovement()->MaxFlySpeed = FlightDashSpeed;
+}
+
+void ASteelheartCharacter::StopDashing()
+{
+	bIsDashing = false;
+
+	GetCharacterMovement()->MaxFlySpeed = FlightBaseSpeed;
 }
