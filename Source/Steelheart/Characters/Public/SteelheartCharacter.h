@@ -44,11 +44,14 @@ protected:
 	
 	void HandleDashInput();
 		
-	/** Called for forwards/backward input */
+	/** Called for forwards/backwards input */
 	void MoveForward(float Value);
 
 	/** Called for side to side input */
 	void MoveRight(float Value);
+
+	/** Called for upwards/downwards input */
+	void MoveUp(float Value);
 
 	/** 
 	 * Called via input to turn at a given rate. 
@@ -62,6 +65,7 @@ protected:
 	 */
 	void LookUpAtRate(float Rate);
 
+private:
 	void Fly();
 
 	void StopFlying();
@@ -73,7 +77,13 @@ protected:
 	void Dash();
 
 	void StopDashing();
-		
+
+	void ProcessDashLerp(float DeltaSeconds);
+
+	void InverseDashLerp();
+
+	bool CheckAngleBetweenVelocityAndRightVector();
+
 public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
@@ -81,25 +91,52 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 private:
-	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
+	UPROPERTY(EditDefaultsOnly, Category = BasicFlight)
+		float RemnantFallVelocityCoeffOnFly = 0.4f;
+
+	UPROPERTY(EditDefaultsOnly, Category = BasicFlight)
+		float RemnantFallVelocityCap = 700.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		UAnimMontage* SoftLandingMontage = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
+	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		UAnimMontage* MediumLandingMontage = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
+	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		UAnimMontage* HardLandingMontage = nullptr;
 	
-	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
+	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		float SoftLandingUpperLimit = 500.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
+	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		float HardLandingLowerLimit = 1200.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
+	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float FlightDashSpeed = 3000.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = Dashing)
+		float DashAcceleration = 50000.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = Dashing)
+		float DashLerpTime = 1.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = Dashing)
+		float DashCameraBoomLength = 600.f;
 	
 	float LandingInitiationLocationZ;
 		
 	float FlightBaseSpeed;
+
+	float BaseAcceleration;
+
+	float BaseCameraBoomLength;
+
+	float DashLerpTimeCounter = 0.f;
+
+	float DashLerpAlpha = 0.f;
+
+	bool bProcessDashLerp;
+
+	bool bProcessStopDashLerp;
 };

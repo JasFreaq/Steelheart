@@ -15,7 +15,7 @@
 ASteelheartCharacter::ASteelheartCharacter()
 {
 	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+	GetCapsuleComponent()->InitCapsuleSize(42.f, 90.0f);
 
 	// set our turn rates for input
 	BaseTurnRate = 45.f;
@@ -23,11 +23,11 @@ ASteelheartCharacter::ASteelheartCharacter()
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
 
 	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
+	GetCharacterMovement()->bOrientRotationToMovement = false; // Character moves in the direction of input...	
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
@@ -35,12 +35,15 @@ ASteelheartCharacter::ASteelheartCharacter()
 	GetCharacterMovement()->BrakingDecelerationFlying = 1500.f;
 
 	FlightBaseSpeed = GetCharacterMovement()->MaxFlySpeed;
+	BaseAcceleration = GetCharacterMovement()->GetMaxAcceleration();
 	
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
+
+	BaseCameraBoomLength = CameraBoom->TargetArmLength;
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -58,7 +61,15 @@ void ASteelheartCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	GetCharacterMovement()->bUseControllerDesiredRotation = GetCharacterMovement()->Velocity.Size() > 0.f;
+	if (bProcessDashLerp && CheckAngleBetweenVelocityAndRightVector())
+	{
+		StopDashing();
+	}
+
+	if (bProcessDashLerp || bProcessStopDashLerp)
+	{
+		ProcessDashLerp(DeltaSeconds);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -76,6 +87,7 @@ void ASteelheartCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASteelheartCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASteelheartCharacter::MoveRight);
+	PlayerInputComponent->BindAxis("MoveUp", this, &ASteelheartCharacter::MoveUp);
 
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "turn" handles devices that provide an absolute delta, such as a mouse.
@@ -139,6 +151,11 @@ void ASteelheartCharacter::MoveForward(float Value)
 
 		AddMovementInput(Direction, Value);
 	}
+
+	if (bIsDashing && Value <= 0.8f)
+	{
+		StopDashing();
+	}
 }
 
 void ASteelheartCharacter::MoveRight(float Value)
@@ -153,6 +170,15 @@ void ASteelheartCharacter::MoveRight(float Value)
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		// add movement in that direction
 		AddMovementInput(Direction, Value);
+	}
+}
+
+void ASteelheartCharacter::MoveUp(float Value)
+{
+	if ((Controller != nullptr) && (Value != 0.0f))
+	{
+		// add movement in upwards direction
+		AddMovementInput(GetActorUpVector(), Value);
 	}
 }
 
@@ -171,6 +197,21 @@ void ASteelheartCharacter::LookUpAtRate(float Rate)
 void ASteelheartCharacter::Fly()
 {
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+
+	FVector Velocity = GetCharacterMovement()->Velocity;
+	float DotProduct = FVector::DotProduct(Velocity, -GetActorUpVector()) / Velocity.Size();
+
+	if (FMath::IsNearlyEqual(DotProduct, 1.f))
+	{
+		Velocity.Z *= RemnantFallVelocityCoeffOnFly;
+		Velocity.Z = FMath::Max(Velocity.Z, -RemnantFallVelocityCap);
+	}
+	else
+	{
+		Velocity.Z = 0;
+	}
+
+	GetCharacterMovement()->Velocity = Velocity;
 }
 
 void ASteelheartCharacter::StopFlying()
@@ -218,6 +259,14 @@ void ASteelheartCharacter::Dash()
 	bIsDashing = true;
 
 	GetCharacterMovement()->MaxFlySpeed = FlightDashSpeed;
+	GetCharacterMovement()->MaxAcceleration = DashAcceleration;
+
+	bProcessDashLerp = true;
+	if (bProcessStopDashLerp)
+	{
+		bProcessStopDashLerp = false;
+		InverseDashLerp();
+	}
 }
 
 void ASteelheartCharacter::StopDashing()
@@ -225,4 +274,66 @@ void ASteelheartCharacter::StopDashing()
 	bIsDashing = false;
 
 	GetCharacterMovement()->MaxFlySpeed = FlightBaseSpeed;
+	GetCharacterMovement()->MaxAcceleration = BaseAcceleration;
+
+	bProcessStopDashLerp = true;
+	if (bProcessDashLerp)
+	{
+		bProcessDashLerp = false;
+		InverseDashLerp();
+	}
+}
+
+void ASteelheartCharacter::ProcessDashLerp(float DeltaSeconds)
+{
+	float InitialLength;
+	float TargetLength;
+
+	if (bProcessDashLerp)
+	{
+		InitialLength = BaseCameraBoomLength;
+		TargetLength = DashCameraBoomLength;
+	}
+	else if (bProcessStopDashLerp)
+	{
+		InitialLength = DashCameraBoomLength;
+		TargetLength = BaseCameraBoomLength;
+	}
+	
+	DashLerpTimeCounter += DeltaSeconds;
+	DashLerpAlpha = DashLerpTimeCounter / DashLerpTime;
+
+	CameraBoom->TargetArmLength = FMath::Lerp(InitialLength, TargetLength, DashLerpAlpha);
+
+	if (DashLerpAlpha >= 1.f)
+	{
+		bProcessDashLerp = false;
+		bProcessStopDashLerp = false;
+
+		CameraBoom->TargetArmLength = TargetLength;
+
+		DashLerpTimeCounter = 0.f;
+		DashLerpAlpha = 0.f;
+	}
+}
+
+void ASteelheartCharacter::InverseDashLerp()
+{
+	DashLerpTimeCounter = DashLerpTime - DashLerpTimeCounter;
+	DashLerpAlpha = 1.f - DashLerpAlpha;
+}
+
+bool ASteelheartCharacter::CheckAngleBetweenVelocityAndRightVector()
+{
+	FVector Velocity = GetCharacterMovement()->Velocity;
+
+	float DotProduct = FVector::DotProduct(Velocity, GetActorRightVector());
+	float Theta = FMath::Acos(DotProduct / Velocity.Size());
+	bool IsValid = FMath::RadiansToDegrees(Theta) < 45.f;
+
+	DotProduct = FVector::DotProduct(Velocity, -GetActorRightVector());
+	Theta = FMath::Acos(DotProduct / Velocity.Size());
+	IsValid = IsValid || FMath::RadiansToDegrees(Theta) < 45.f;
+
+	return IsValid;
 }
