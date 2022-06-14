@@ -8,6 +8,7 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Steelheart/Components/Public/FlightLocomotionComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ASteelheartCharacter
@@ -52,7 +53,16 @@ ASteelheartCharacter::ASteelheartCharacter()
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
+	// are set in the derived blueprint asset (to avoid direct content references in C++)
+
+	FlightLocomotionComponent = CreateDefaultSubobject<UFlightLocomotionComponent>(TEXT("FlightLocomotionComponent"));
+}
+
+void ASteelheartCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	FlightLocomotionComponent->InitializeFlightLocomotion(this, FollowCamera, GetCapsuleComponent(), GetCharacterMovement());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -103,12 +113,12 @@ void ASteelheartCharacter::HandleFlyInput()
 {
 	if (GetCharacterMovement()->IsFlying())
 	{
-		StopFlying();
+		FlightLocomotionComponent->StopFlying();
 	}
 	else if (GetCharacterMovement()->IsFalling())
 	{
 		Super::StopJumping();
-		Fly();
+		FlightLocomotionComponent->Fly();
 	}
 	else
 	{
@@ -120,11 +130,29 @@ void ASteelheartCharacter::HandleDashInput()
 {
 	if (bIsDashing)
 	{
-		StopDashing();
+		bIsDashing = false;
+
+		if (GetCharacterMovement()->IsFlying())
+		{
+			FlightLocomotionComponent->StopDashing();
+		}
+		/*else 
+		{
+			StopDashing();
+		}*/
 	}
 	else
 	{
-		Dash();		
+		bIsDashing = true;
+
+		if (GetCharacterMovement()->IsFlying())
+		{
+			FlightLocomotionComponent->Dash();
+		}
+		/*else
+		{
+			Dash();		
+		}*/
 	}
 }
 
@@ -153,10 +181,10 @@ void ASteelheartCharacter::MoveForward(float Value)
 		AddMovementInput(Direction, Value);
 	}
 
-	if (bIsDashing && Value <= 0.8f)
+	/*if (bIsDashing && Value <= 0.8f)
 	{
 		StopDashing();
-	}
+	}*/
 }
 
 void ASteelheartCharacter::MoveRight(float Value)
@@ -195,32 +223,6 @@ void ASteelheartCharacter::LookUpAtRate(float Rate)
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
 
-void ASteelheartCharacter::Fly()
-{
-	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
-
-	FVector Velocity = GetCharacterMovement()->Velocity;
-	float DotProduct = FVector::DotProduct(Velocity, -GetActorUpVector()) / Velocity.Size();
-
-	if (FMath::IsNearlyEqual(DotProduct, 1.f))
-	{
-		Velocity.Z *= RemnantFallVelocityCoeffOnFly;
-		Velocity.Z = FMath::Max(Velocity.Z, -RemnantFallVelocityCap);
-	}
-	else
-	{
-		Velocity.Z = 0;
-	}
-
-	GetCharacterMovement()->Velocity = Velocity;
-}
-
-void ASteelheartCharacter::StopFlying()
-{
-	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
-	LandingInitiationLocationZ = GetActorLocation().Z;
-}
-
 void ASteelheartCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
@@ -257,8 +259,6 @@ void ASteelheartCharacter::OnWalkingOffLedge_Implementation(const FVector& Previ
 
 void ASteelheartCharacter::Dash()
 {
-	bIsDashing = true;
-
 	//GetCharacterMovement()->MaxFlySpeed = FlyDashSpeed;
 	//GetCharacterMovement()->MaxWalkSpeed = WalkDashSpeed;
 	GetCharacterMovement()->MaxAcceleration = DashAcceleration;
@@ -273,8 +273,6 @@ void ASteelheartCharacter::Dash()
 
 void ASteelheartCharacter::StopDashing()
 {
-	bIsDashing = false;
-
 	//GetCharacterMovement()->MaxFlySpeed = FlyBaseSpeed;
 	GetCharacterMovement()->MaxAcceleration = BaseAcceleration;
 

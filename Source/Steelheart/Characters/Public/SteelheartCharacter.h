@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "SteelheartCharacter.generated.h"
 
+class UFlightLocomotionComponent;
+
 UCLASS(config = Game)
 class ASteelheartCharacter : public ACharacter
 {
@@ -18,9 +20,15 @@ class ASteelheartCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		class UCameraComponent* FollowCamera;
-	
+
+	/** Follow camera */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
+		UFlightLocomotionComponent* FlightLocomotionComponent;
+
 public:
 	ASteelheartCharacter();
+
+	virtual void BeginPlay() override;
 
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
@@ -66,10 +74,6 @@ protected:
 	void LookUpAtRate(float Rate);
 
 private:
-	void Fly();
-
-	void StopFlying();
-
 	virtual void Landed(const FHitResult& Hit) override;
 
 	virtual void OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta) override;
