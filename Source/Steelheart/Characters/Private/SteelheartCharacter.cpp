@@ -33,8 +33,9 @@ ASteelheartCharacter::ASteelheartCharacter()
 	GetCharacterMovement()->AirControl = 0.2f;
 
 	GetCharacterMovement()->BrakingDecelerationFlying = 1500.f;
-
-	FlightBaseSpeed = GetCharacterMovement()->MaxFlySpeed;
+	
+	WalkBaseSpeed = GetCharacterMovement()->MaxWalkSpeed;
+	FlyBaseSpeed = GetCharacterMovement()->MaxFlySpeed;
 	BaseAcceleration = GetCharacterMovement()->GetMaxAcceleration();
 	
 	// Create a camera boom (pulls in towards the player if there is a collision)
@@ -43,7 +44,7 @@ ASteelheartCharacter::ASteelheartCharacter()
 	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
 
-	BaseCameraBoomLength = CameraBoom->TargetArmLength;
+	CameraBoomBaseLength = CameraBoom->TargetArmLength;
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -258,7 +259,8 @@ void ASteelheartCharacter::Dash()
 {
 	bIsDashing = true;
 
-	GetCharacterMovement()->MaxFlySpeed = FlightDashSpeed;
+	//GetCharacterMovement()->MaxFlySpeed = FlyDashSpeed;
+	//GetCharacterMovement()->MaxWalkSpeed = WalkDashSpeed;
 	GetCharacterMovement()->MaxAcceleration = DashAcceleration;
 
 	bProcessDashLerp = true;
@@ -273,7 +275,7 @@ void ASteelheartCharacter::StopDashing()
 {
 	bIsDashing = false;
 
-	GetCharacterMovement()->MaxFlySpeed = FlightBaseSpeed;
+	//GetCharacterMovement()->MaxFlySpeed = FlyBaseSpeed;
 	GetCharacterMovement()->MaxAcceleration = BaseAcceleration;
 
 	bProcessStopDashLerp = true;
@@ -286,31 +288,48 @@ void ASteelheartCharacter::StopDashing()
 
 void ASteelheartCharacter::ProcessDashLerp(float DeltaSeconds)
 {
-	float InitialLength;
-	float TargetLength;
+	float InitialBoomLength, TargetBoomLength;
+	float InitialFlySpeed, TargetFlySpeed;
+	float InitialWalkSpeed, TargetWalkSpeed;
 
 	if (bProcessDashLerp)
 	{
-		InitialLength = BaseCameraBoomLength;
-		TargetLength = DashCameraBoomLength;
+		InitialBoomLength = CameraBoomBaseLength;
+		TargetBoomLength = CameraBoomDashLength;
+
+		InitialFlySpeed = FlyBaseSpeed;
+		TargetFlySpeed = FlyDashSpeed;
+
+		InitialWalkSpeed = WalkBaseSpeed;
+		TargetWalkSpeed = WalkDashSpeed;
 	}
 	else if (bProcessStopDashLerp)
 	{
-		InitialLength = DashCameraBoomLength;
-		TargetLength = BaseCameraBoomLength;
+		InitialBoomLength = CameraBoomDashLength;
+		TargetBoomLength = CameraBoomBaseLength;
+
+		InitialFlySpeed = FlyDashSpeed;
+		TargetFlySpeed = FlyBaseSpeed;
+
+		InitialWalkSpeed = WalkDashSpeed;
+		TargetWalkSpeed = WalkBaseSpeed;
 	}
 	
 	DashLerpTimeCounter += DeltaSeconds;
 	DashLerpAlpha = DashLerpTimeCounter / DashLerpTime;
 
-	CameraBoom->TargetArmLength = FMath::Lerp(InitialLength, TargetLength, DashLerpAlpha);
+	GetCharacterMovement()->MaxWalkSpeed = FMath::Lerp(InitialWalkSpeed, TargetWalkSpeed, DashLerpAlpha);
+	GetCharacterMovement()->MaxFlySpeed = FMath::Lerp(InitialFlySpeed, TargetFlySpeed, DashLerpAlpha);
+	CameraBoom->TargetArmLength = FMath::Lerp(InitialBoomLength, TargetBoomLength, DashLerpAlpha);
 
 	if (DashLerpAlpha >= 1.f)
 	{
 		bProcessDashLerp = false;
 		bProcessStopDashLerp = false;
 
-		CameraBoom->TargetArmLength = TargetLength;
+		GetCharacterMovement()->MaxWalkSpeed = TargetWalkSpeed;
+		GetCharacterMovement()->MaxFlySpeed = TargetFlySpeed;
+		CameraBoom->TargetArmLength = TargetBoomLength;
 
 		DashLerpTimeCounter = 0.f;
 		DashLerpAlpha = 0.f;

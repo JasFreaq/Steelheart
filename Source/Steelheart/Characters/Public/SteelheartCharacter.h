@@ -113,8 +113,11 @@ private:
 		float HardLandingLowerLimit = 1200.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
-		float FlightDashSpeed = 3000.f;
+		float WalkDashSpeed = 3000.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = Dashing)
+		float FlyDashSpeed = 3000.f;
+	
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float DashAcceleration = 50000.f;
 
@@ -122,15 +125,17 @@ private:
 		float DashLerpTime = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
-		float DashCameraBoomLength = 600.f;
+		float CameraBoomDashLength = 600.f;
 	
 	float LandingInitiationLocationZ;
 		
-	float FlightBaseSpeed;
+	float WalkBaseSpeed;
 
+	float FlyBaseSpeed;
+	
 	float BaseAcceleration;
 
-	float BaseCameraBoomLength;
+	float CameraBoomBaseLength;
 
 	float DashLerpTimeCounter = 0.f;
 
