@@ -95,12 +95,6 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 private:
-	UPROPERTY(EditDefaultsOnly, Category = BasicFlight)
-		float RemnantFallVelocityCoeffOnFly = 0.4f;
-
-	UPROPERTY(EditDefaultsOnly, Category = BasicFlight)
-		float RemnantFallVelocityCap = 700.f;
-
 	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		UAnimMontage* SoftLandingMontage = nullptr;
 
@@ -118,26 +112,21 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float WalkDashSpeed = 3000.f;
-
+		
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
-		float FlyDashSpeed = 3000.f;
-	
-	UPROPERTY(EditDefaultsOnly, Category = Dashing)
-		float DashAcceleration = 50000.f;
+		float WalkDashAcceleration = 50000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float DashLerpTime = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
-		float CameraBoomDashLength = 600.f;
+		float CameraBoomDashLength = 450.f;
 	
 	float LandingInitiationLocationZ;
 		
 	float WalkBaseSpeed;
-
-	float FlyBaseSpeed;
-	
-	float BaseAcceleration;
+		
+	float WalkBaseAcceleration;
 
 	float CameraBoomBaseLength;
 

@@ -32,6 +32,10 @@ public:
 
 	void StopDashing();
 
+	void RightDodge();
+
+	void LeftDodge();
+
 private:
 	void UpdateFlightLocomotion(float DeltaTime);
 
@@ -42,6 +46,12 @@ private:
 	void ApplyDodgeForce(float DeltaTime);
 
 	void SmoothResetPitch(float DeltaTime);
+
+	UFUNCTION()
+		void ResetDodge();
+
+	UFUNCTION()
+		void ResetDodgeTimer();
 	
 public:
 	UPROPERTY(BlueprintReadOnly, Category = AnimationHandling)
@@ -84,6 +94,12 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = FlightLocomotionRatios)
 		float ZMomentumCoeff = 0.7f;
 
+	UPROPERTY(EditDefaultsOnly, Category = AnimationHandling)
+		float DodgeTime = 1.5f;
+
+	UPROPERTY(EditDefaultsOnly, Category = AnimationHandling)
+		float DodgeBufferTime = 0.1f;
+
 	ACharacter* OwnerCharacter = nullptr;
 
 	UCameraComponent* CameraComponent = nullptr;
@@ -92,9 +108,19 @@ private:
 	
 	UCharacterMovementComponent* CharacterMovement = nullptr;
 
+	FTimerHandle DodgeTimerHandle;
+
+	FTimerHandle DodgeResetBufferTimerHandle;
+
+	FTimerDelegate DodgeTimerDelegate;
+
+	FTimerDelegate DodgeResetBufferTimerDelegate;
+
 	bool bIsDashing;
 
 	bool bWasDashing;
+
+	bool bIsDodging;
 
 	float CapsuleHalfHeight;
 

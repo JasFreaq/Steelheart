@@ -15,7 +15,8 @@ UFlightLocomotionComponent::UFlightLocomotionComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
+	DodgeTimerDelegate.BindUFunction(this, "ResetDodge");
+	DodgeResetBufferTimerDelegate.BindUFunction(this, "ResetDodgeTimer");
 }
 
 void UFlightLocomotionComponent::InitializeFlightLocomotion(ACharacter* OwnerCharacterRef,
@@ -98,12 +99,41 @@ void UFlightLocomotionComponent::StopDashing()
 {
 	bIsDashing = false;
 
+	CharacterMovement->MaxFlySpeed = BaseSpeed;
+	CharacterMovement->MaxAcceleration = BaseAcceleration;
+
 	CapsuleComponent->SetCapsuleHalfHeight(CapsuleHalfHeight);
 
 	bIsDodgingRight = false;
 	bIsDodgingLeft = false;
 
 	bWasDashing = true;
+}
+
+void UFlightLocomotionComponent::RightDodge()
+{
+	if (bIsDashing && !bIsDodging && !(bIsDodgingRight || bIsDodgingLeft))
+	{
+		bIsDodging = true;
+		bIsDodgingRight = true;
+
+		CurrentDodgeForce = BaseDodgeForce;
+		
+		GetWorld()->GetTimerManager().SetTimer(DodgeTimerHandle, DodgeTimerDelegate, DodgeTime, false);
+	}
+}
+
+void UFlightLocomotionComponent::LeftDodge()
+{
+	if (bIsDashing && !bIsDodging && !(bIsDodgingRight || bIsDodgingLeft))
+	{
+		bIsDodging = true;
+		bIsDodgingLeft = true;
+
+		CurrentDodgeForce = BaseDodgeForce;
+
+		GetWorld()->GetTimerManager().SetTimer(DodgeTimerHandle, DodgeTimerDelegate, DodgeTime, false);
+	}
 }
 
 void UFlightLocomotionComponent::UpdateFlightRotation(float DeltaTime)
@@ -167,4 +197,20 @@ void UFlightLocomotionComponent::SmoothResetPitch(float DeltaTime)
 		FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, RotationInterpSpeed);
 		OwnerCharacter->SetActorRotation(NewRotation);
 	}
+}
+
+void UFlightLocomotionComponent::ResetDodge()
+{
+	bIsDodgingRight = false;
+	bIsDodgingLeft = false;
+
+	GetWorld()->GetTimerManager().ClearTimer(DodgeTimerHandle);
+	GetWorld()->GetTimerManager().SetTimer(DodgeResetBufferTimerHandle, DodgeResetBufferTimerDelegate, DodgeBufferTime, false);
+}
+
+void UFlightLocomotionComponent::ResetDodgeTimer()
+{
+	bIsDodging = false;
+
+	GetWorld()->GetTimerManager().ClearTimer(DodgeResetBufferTimerHandle);
 }
