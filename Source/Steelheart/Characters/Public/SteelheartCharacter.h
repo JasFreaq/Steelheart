@@ -120,7 +120,7 @@ private:
 		float DashLerpTime = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
-		float CameraBoomDashLength = 450.f;
+		float CameraBoomDashLength = 600.f;
 	
 	float LandingInitiationLocationZ;
 		
