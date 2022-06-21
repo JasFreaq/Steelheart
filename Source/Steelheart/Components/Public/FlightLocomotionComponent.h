@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "FlightLocomotionComponent.generated.h"
 
+class IFlightLocomotionInterface;
 class UCameraComponent;
 class UCapsuleComponent;
 class UCharacterMovementComponent;
@@ -19,7 +20,7 @@ public:
 	// Sets default values for this component's properties
 	UFlightLocomotionComponent();
 
-	void InitializeFlightLocomotion(ACharacter* OwnerCharacterRef, UCameraComponent* CameraComponentRef, UCapsuleComponent* CapsuleComponentRef, UCharacterMovementComponent* CharacterMovementRef);
+	void InitializeFlightLocomotion(ACharacter* OwnerCharacterRef, IFlightLocomotionInterface* FlightLocomotionInterface);
 
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -52,7 +53,10 @@ private:
 
 	UFUNCTION()
 		void ResetDodgeTimer();
-	
+
+	UFUNCTION()
+		void OnCharacterLanded(const FHitResult& Hit);
+
 public:
 	UPROPERTY(BlueprintReadOnly, Category = AnimationHandling)
 		float XRotationRate;
@@ -67,6 +71,21 @@ public:
 		bool bIsDodgingLeft;
 
 private:
+	UPROPERTY(EditDefaultsOnly, Category = FlightAnimations)
+		UAnimMontage* SoftLandingMontage = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = FlightAnimations)
+		UAnimMontage* MediumLandingMontage = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = FlightAnimations)
+		UAnimMontage* HardLandingMontage = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
+		float SoftLandingUpperLimit = 500.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
+		float HardLandingLowerLimit = 1200.f;
+
 	UPROPERTY(EditDefaultsOnly, Category = FlightLocomotion)
 		float BaseSpeed = 850.f;
 
@@ -125,4 +144,6 @@ private:
 	float CapsuleHalfHeight;
 
 	float CurrentDodgeForce;
+
+	float LandingInitiationLocationZ;
 };

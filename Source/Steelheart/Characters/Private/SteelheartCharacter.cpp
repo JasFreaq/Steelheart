@@ -61,7 +61,7 @@ void ASteelheartCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	FlightLocomotionComponent->InitializeFlightLocomotion(this, FollowCamera, GetCapsuleComponent(), GetCharacterMovement());
+	//FlightLocomotionComponent->InitializeFlightLocomotion(this, FollowCamera, GetCapsuleComponent(), GetCharacterMovement());
 }
 
 //////////////////////////////////////////////////////////////////////////

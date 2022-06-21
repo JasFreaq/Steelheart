@@ -7,6 +7,8 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Steelheart/Interfaces/Public/FlightLocomotionInterface.h"
 
 // Sets default values for this component's properties
 UFlightLocomotionComponent::UFlightLocomotionComponent()
@@ -20,18 +22,19 @@ UFlightLocomotionComponent::UFlightLocomotionComponent()
 }
 
 void UFlightLocomotionComponent::InitializeFlightLocomotion(ACharacter* OwnerCharacterRef,
-	UCameraComponent* CameraComponentRef, UCapsuleComponent* CapsuleComponentRef,
-	UCharacterMovementComponent* CharacterMovementRef)
+	IFlightLocomotionInterface* FlightLocomotionInterface)
 {
 	OwnerCharacter = OwnerCharacterRef;
-	CameraComponent = CameraComponentRef;
-	CapsuleComponent = CapsuleComponentRef;
-	CharacterMovement = CharacterMovementRef;
+	CameraComponent = FlightLocomotionInterface->GetCameraComponent();
+	CapsuleComponent = FlightLocomotionInterface->GetCapsuleComponent();
+	CharacterMovement = FlightLocomotionInterface->GetCharacterMovementComponent();
 
 	CapsuleHalfHeight = CapsuleComponent->GetUnscaledCapsuleHalfHeight();
 
 	CharacterMovement->MaxAcceleration = BaseAcceleration;
 	CharacterMovement->BrakingDecelerationFlying = BrakingDecelerationFlying;
+
+	//FlightLocomotionInterface->GetCharacterLandDelegate().BindUFunction(this, "OnCharacterLanded");
 }
 
 
@@ -45,10 +48,10 @@ void UFlightLocomotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
 		UpdateFlightLocomotion(DeltaTime);
 	}
 
-	/*if (bWasDashing)
+	if (bWasDashing)
 	{
 		SmoothResetPitch(DeltaTime);
-	}*/
+	}
 }
 
 
@@ -77,10 +80,12 @@ void UFlightLocomotionComponent::StopFlying()
 	FVector CapsuleLinearVelocity = CapsuleComponent->GetPhysicsLinearVelocity();
 	float ZMomentum = CapsuleLinearVelocity.Z;
 
-	CharacterMovement->SetMovementMode(MOVE_Falling);
-
 	FVector LaunchVelocity(0.f, 0.f, ZMomentum * ZMomentumCoeff);
 	OwnerCharacter->LaunchCharacter(LaunchVelocity, false, true);
+
+	CharacterMovement->SetMovementMode(MOVE_Falling);
+	CapsuleComponent->SetCapsuleHalfHeight(CapsuleHalfHeight);
+
 }
 
 void UFlightLocomotionComponent::Dash()
@@ -213,4 +218,30 @@ void UFlightLocomotionComponent::ResetDodgeTimer()
 	bIsDodging = false;
 
 	GetWorld()->GetTimerManager().ClearTimer(DodgeResetBufferTimerHandle);
+}
+
+void UFlightLocomotionComponent::OnCharacterLanded(const FHitResult& Hit)
+{
+	OwnerCharacter->DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+
+	if (CharacterMovement->IsWalkable(Hit))
+	{
+		float FloorDistance = LandingInitiationLocationZ - OwnerCharacter->GetActorLocation().Z;
+
+		if (FloorDistance <= SoftLandingUpperLimit)
+		{
+			if (ensure(SoftLandingMontage != nullptr))
+				OwnerCharacter->PlayAnimMontage(SoftLandingMontage);
+		}
+		else if (FloorDistance > HardLandingLowerLimit)
+		{
+			if (ensure(HardLandingMontage != nullptr))
+				OwnerCharacter->PlayAnimMontage(HardLandingMontage);
+		}
+		else // Medium Landing
+		{
+			if (ensure(MediumLandingMontage != nullptr))
+				OwnerCharacter->PlayAnimMontage(MediumLandingMontage);
+		}
+	}
 }
