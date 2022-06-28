@@ -6,9 +6,9 @@
 ASteelheartGameMode::ASteelheartGameMode()
 {
 	// set default pawn class to our Blueprinted character
-	/*static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/_Game/Blueprints/Characters/BP_SteelheartCharacter"));
+	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/_Game/Blueprints/Characters/BP_SteelheartCharacter"));
 	if (PlayerPawnBPClass.Class != NULL)
 	{
 		DefaultPawnClass = PlayerPawnBPClass.Class;
-	}*/
+	}
 }

@@ -21,20 +21,26 @@ UFlightLocomotionComponent::UFlightLocomotionComponent()
 	DodgeResetBufferTimerDelegate.BindUFunction(this, "ResetDodgeTimer");
 }
 
-void UFlightLocomotionComponent::InitializeFlightLocomotion(ACharacter* OwnerCharacterRef,
-	IFlightLocomotionInterface* FlightLocomotionInterface)
+void UFlightLocomotionComponent::InitializeFlightLocomotion(ACharacter* OwnerCharacterRef)
 {
 	OwnerCharacter = OwnerCharacterRef;
-	CameraComponent = FlightLocomotionInterface->GetCameraComponent();
-	CapsuleComponent = FlightLocomotionInterface->GetCapsuleComponent();
-	CharacterMovement = FlightLocomotionInterface->GetCharacterMovementComponent();
+	FlightLocomotionInterface = Cast<IFlightLocomotionInterface>(OwnerCharacter);
 
-	CapsuleHalfHeight = CapsuleComponent->GetUnscaledCapsuleHalfHeight();
+	if (ensure(FlightLocomotionInterface != nullptr))
+	{
+		CameraComponent = FlightLocomotionInterface->GetCameraComponent();
+		CapsuleComponent = OwnerCharacterRef->GetCapsuleComponent();
+		CharacterMovement = OwnerCharacterRef->GetCharacterMovement();
 
-	CharacterMovement->MaxAcceleration = BaseAcceleration;
-	CharacterMovement->BrakingDecelerationFlying = BrakingDecelerationFlying;
+		CapsuleHalfHeight = CapsuleComponent->GetUnscaledCapsuleHalfHeight();
 
-	//FlightLocomotionInterface->GetCharacterLandDelegate().BindUFunction(this, "OnCharacterLanded");
+		CharacterMovement->MaxAcceleration = BaseAcceleration;
+		CharacterMovement->BrakingDecelerationFlying = BrakingDecelerationFlying;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Character passed to Initialize FlightLocomotionComponent does not have FlightLocomotionInterface."));
+	}
 }
 
 
@@ -47,7 +53,7 @@ void UFlightLocomotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
 	{
 		UpdateFlightLocomotion(DeltaTime);
 	}
-
+	
 	if (bWasDashing)
 	{
 		SmoothResetPitch(DeltaTime);
@@ -77,21 +83,20 @@ void UFlightLocomotionComponent::Fly()
 
 void UFlightLocomotionComponent::StopFlying()
 {
+	LandingInitiationLocationZ = OwnerCharacter->GetActorLocation().Z;
+
 	FVector CapsuleLinearVelocity = CapsuleComponent->GetPhysicsLinearVelocity();
 	float ZMomentum = CapsuleLinearVelocity.Z;
-
+	
 	FVector LaunchVelocity(0.f, 0.f, ZMomentum * ZMomentumCoeff);
 	OwnerCharacter->LaunchCharacter(LaunchVelocity, false, true);
 
 	CharacterMovement->SetMovementMode(MOVE_Falling);
 	CapsuleComponent->SetCapsuleHalfHeight(CapsuleHalfHeight);
-
 }
 
 void UFlightLocomotionComponent::Dash()
 {
-	bIsDashing = true;
-
 	CharacterMovement->MaxFlySpeed = DashSpeed;
 	CharacterMovement->MaxAcceleration = DashAcceleration;
 
@@ -102,8 +107,6 @@ void UFlightLocomotionComponent::Dash()
 
 void UFlightLocomotionComponent::StopDashing()
 {
-	bIsDashing = false;
-
 	CharacterMovement->MaxFlySpeed = BaseSpeed;
 	CharacterMovement->MaxAcceleration = BaseAcceleration;
 
@@ -117,7 +120,7 @@ void UFlightLocomotionComponent::StopDashing()
 
 void UFlightLocomotionComponent::RightDodge()
 {
-	if (bIsDashing && !bIsDodging && !(bIsDodgingRight || bIsDodgingLeft))
+	if (FlightLocomotionInterface->IsDashing() && !bIsDodging && !(bIsDodgingRight || bIsDodgingLeft))
 	{
 		bIsDodging = true;
 		bIsDodgingRight = true;
@@ -130,7 +133,7 @@ void UFlightLocomotionComponent::RightDodge()
 
 void UFlightLocomotionComponent::LeftDodge()
 {
-	if (bIsDashing && !bIsDodging && !(bIsDodgingRight || bIsDodgingLeft))
+	if (FlightLocomotionInterface->IsDashing() && !bIsDodging && !(bIsDodgingRight || bIsDodgingLeft))
 	{
 		bIsDodging = true;
 		bIsDodgingLeft = true;
@@ -146,7 +149,7 @@ void UFlightLocomotionComponent::UpdateFlightRotation(float DeltaTime)
 	FRotator CurrentRotation = CapsuleComponent->GetComponentRotation();
 
 	FRotator TargetRotation = CameraComponent->GetComponentRotation();
-	if (!bIsDashing)
+	if (!FlightLocomotionInterface->IsDashing())
 	{
 		TargetRotation.Pitch = 0.f;
 	}
@@ -220,10 +223,10 @@ void UFlightLocomotionComponent::ResetDodgeTimer()
 	GetWorld()->GetTimerManager().ClearTimer(DodgeResetBufferTimerHandle);
 }
 
-void UFlightLocomotionComponent::OnCharacterLanded(const FHitResult& Hit)
+void UFlightLocomotionComponent::HandleCharacterLanding(const FHitResult& Hit)
 {
 	OwnerCharacter->DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-
+	
 	if (CharacterMovement->IsWalkable(Hit))
 	{
 		float FloorDistance = LandingInitiationLocationZ - OwnerCharacter->GetActorLocation().Z;
@@ -244,4 +247,9 @@ void UFlightLocomotionComponent::OnCharacterLanded(const FHitResult& Hit)
 				OwnerCharacter->PlayAnimMontage(MediumLandingMontage);
 		}
 	}
+}
+
+void UFlightLocomotionComponent::SetLandingInitiationLocationZ(float Value)
+{
+	LandingInitiationLocationZ = Value;
 }

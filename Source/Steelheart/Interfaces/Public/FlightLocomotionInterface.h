@@ -9,8 +9,6 @@
 //DECLARE_DELEGATE_OneParam(FCharacterLandDelegate, const FHitResult&);
 
 class UCameraComponent;
-class UCapsuleComponent;
-class UCharacterMovementComponent;
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
@@ -28,11 +26,7 @@ class STEELHEART_API IFlightLocomotionInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	//virtual FCharacterLandDelegate& GetCharacterLandDelegate() = 0;
-	
 	virtual UCameraComponent* GetCameraComponent() = 0;
 
-	virtual UCapsuleComponent* GetCapsuleComponent() = 0;
-
-	virtual UCharacterMovementComponent* GetCharacterMovementComponent() = 0;
+	virtual bool IsDashing() = 0;
 };

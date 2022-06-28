@@ -4,12 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Steelheart/Interfaces/Public/FlightLocomotionInterface.h"
 #include "SteelheartCharacter.generated.h"
 
 class UFlightLocomotionComponent;
 
 UCLASS(config = Game)
-class ASteelheartCharacter : public ACharacter
+class ASteelheartCharacter : public ACharacter, public IFlightLocomotionInterface
 {
 	GENERATED_BODY()
 
@@ -19,7 +20,7 @@ class ASteelheartCharacter : public ACharacter
 
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		class UCameraComponent* FollowCamera;
+		UCameraComponent* FollowCamera;
 
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
@@ -29,18 +30,11 @@ public:
 	ASteelheartCharacter();
 
 	virtual void BeginPlay() override;
-
-	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
-		float BaseTurnRate;
-
-	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
-		float BaseLookUpRate;
-
-	UPROPERTY(BlueprintReadOnly, Category = Locomotion)
-		bool bIsDashing;
 	
+	FORCEINLINE virtual UCameraComponent* GetCameraComponent() override { return FollowCamera; }
+
+	FORCEINLINE virtual bool IsDashing() override { return bIsDashing; }
+
 protected:
 	virtual void Tick(float DeltaSeconds) override;
 
@@ -77,7 +71,9 @@ private:
 	virtual void Landed(const FHitResult& Hit) override;
 
 	virtual void OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta) override;
-	
+
+	virtual void NotifyJumpApex() override;
+
 	void Dash();
 
 	void StopDashing();
@@ -89,27 +85,18 @@ private:
 	bool CheckAngleBetweenVelocityAndRightVector();
 
 public:
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
+		float BaseTurnRate;
+
+	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
+		float BaseLookUpRate;
+
+	UPROPERTY(BlueprintReadOnly, Category = Locomotion)
+		bool bIsDashing;
 
 private:
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		UAnimMontage* SoftLandingMontage = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		UAnimMontage* MediumLandingMontage = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		UAnimMontage* HardLandingMontage = nullptr;
-	
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		float SoftLandingUpperLimit = 500.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		float HardLandingLowerLimit = 1200.f;
-
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float WalkDashSpeed = 3000.f;
 		
@@ -121,9 +108,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float CameraBoomDashLength = 600.f;
-	
-	float LandingInitiationLocationZ;
-		
+			
 	float WalkBaseSpeed;
 		
 	float WalkBaseAcceleration;

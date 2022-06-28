@@ -7,6 +7,7 @@
 #include "FlightLocomotionComponent.generated.h"
 
 class IFlightLocomotionInterface;
+
 class UCameraComponent;
 class UCapsuleComponent;
 class UCharacterMovementComponent;
@@ -19,8 +20,8 @@ class STEELHEART_API UFlightLocomotionComponent : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	UFlightLocomotionComponent();
-
-	void InitializeFlightLocomotion(ACharacter* OwnerCharacterRef, IFlightLocomotionInterface* FlightLocomotionInterface);
+	
+	void InitializeFlightLocomotion(ACharacter* OwnerCharacterRef);
 
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -36,6 +37,10 @@ public:
 	void RightDodge();
 
 	void LeftDodge();
+
+	void HandleCharacterLanding(const FHitResult& Hit);
+
+	void SetLandingInitiationLocationZ(float Value);
 
 private:
 	void UpdateFlightLocomotion(float DeltaTime);
@@ -53,10 +58,7 @@ private:
 
 	UFUNCTION()
 		void ResetDodgeTimer();
-
-	UFUNCTION()
-		void OnCharacterLanded(const FHitResult& Hit);
-
+		
 public:
 	UPROPERTY(BlueprintReadOnly, Category = AnimationHandling)
 		float XRotationRate;
@@ -121,6 +123,8 @@ private:
 
 	ACharacter* OwnerCharacter = nullptr;
 
+	IFlightLocomotionInterface* FlightLocomotionInterface = nullptr;
+
 	UCameraComponent* CameraComponent = nullptr;
 		
 	UCapsuleComponent* CapsuleComponent = nullptr;
@@ -134,9 +138,7 @@ private:
 	FTimerDelegate DodgeTimerDelegate;
 
 	FTimerDelegate DodgeResetBufferTimerDelegate;
-
-	bool bIsDashing;
-
+	
 	bool bWasDashing;
 
 	bool bIsDodging;

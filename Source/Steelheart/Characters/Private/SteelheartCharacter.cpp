@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Steelheart/Characters/Public/SteelheartCharacter.h"
+
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
@@ -57,15 +58,15 @@ ASteelheartCharacter::ASteelheartCharacter()
 	FlightLocomotionComponent = CreateDefaultSubobject<UFlightLocomotionComponent>(TEXT("FlightLocomotionComponent"));
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Lifecycle Functions
+
 void ASteelheartCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	//FlightLocomotionComponent->InitializeFlightLocomotion(this, FollowCamera, GetCapsuleComponent(), GetCharacterMovement());
+	FlightLocomotionComponent->InitializeFlightLocomotion(this);
 }
-
-//////////////////////////////////////////////////////////////////////////
-// Lifecycle Functions
 
 void ASteelheartCharacter::Tick(float DeltaSeconds)
 {
@@ -110,10 +111,11 @@ void ASteelheartCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 
 void ASteelheartCharacter::HandleFlyInput()
 {
-	if (GetCharacterMovement()->IsFlying())
+	if (GetCharacterMovement()->IsFlying()) //Stop Flying
 	{
 		if (bIsDashing)
 		{
+			FlightLocomotionComponent->StopDashing();
 			GetCharacterMovement()->MaxAcceleration = WalkDashAcceleration;
 		}
 		else
@@ -123,14 +125,20 @@ void ASteelheartCharacter::HandleFlyInput()
 
 		FlightLocomotionComponent->StopFlying();
 	}
-	else if (GetCharacterMovement()->IsFalling())
+	else if (GetCharacterMovement()->IsFalling()) //Fly
 	{
 		Super::StopJumping();
+		
 		FlightLocomotionComponent->Fly();
+		if (bIsDashing)
+		{
+			FlightLocomotionComponent->Dash();
+		}
 	}
-	else
+	else //Jump
 	{
-		Super::Jump();		
+		Super::Jump();
+		GetCharacterMovement()->bNotifyApex = true;
 	}
 }
 
@@ -187,19 +195,24 @@ void ASteelheartCharacter::MoveRight(float Value)
 
 		// get right vector 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		// add movement in that direction
-		AddMovementInput(Direction, Value);
-	}
-
-	if (bIsDashing && FMath::Abs(Value) >= 0.8f)
-	{
-		if (Value >= 0.f)
+		
+		if (GetCharacterMovement()->IsFlying() && bIsDashing)
 		{
-			FlightLocomotionComponent->RightDodge();
+			if (FMath::Abs(Value) >= 0.8f)
+			{
+				if (Value >= 0.f)
+				{
+					FlightLocomotionComponent->RightDodge();
+				}
+				else
+				{
+					FlightLocomotionComponent->LeftDodge();
+				}
+			}
 		}
-		else
+		else // add movement in that direction
 		{
-			FlightLocomotionComponent->LeftDodge();
+			AddMovementInput(Direction, Value);
 		}
 	}
 }
@@ -209,7 +222,7 @@ void ASteelheartCharacter::MoveUp(float Value)
 	if ((Controller != nullptr) && (Value != 0.0f))
 	{
 		// add movement in upwards direction
-		AddMovementInput(GetActorUpVector(), Value);
+		AddMovementInput(FVector::UpVector, Value);
 	}
 }
 
@@ -225,39 +238,31 @@ void ASteelheartCharacter::LookUpAtRate(float Rate)
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Landing Handling
+
 void ASteelheartCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 
-	DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-
-	if (GetCharacterMovement()->IsWalkable(Hit))
-	{
-		float FloorDistance = LandingInitiationLocationZ - GetActorLocation().Z;
-
-		if (FloorDistance <= SoftLandingUpperLimit)
-		{
-			if (ensure(SoftLandingMontage != nullptr))
-				PlayAnimMontage(SoftLandingMontage);
-		}
-		else if (FloorDistance > HardLandingLowerLimit)
-		{
-			if (ensure(HardLandingMontage != nullptr))
-				PlayAnimMontage(HardLandingMontage);
-		}
-		else // Medium Landing
-		{
-			if (ensure(MediumLandingMontage != nullptr))
-				PlayAnimMontage(MediumLandingMontage);
-		}
-	}
+	FlightLocomotionComponent->HandleCharacterLanding(Hit);
 }
 
 void ASteelheartCharacter::OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal,
 	const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta)
 {
-	LandingInitiationLocationZ = PreviousLocation.Z;
+	FlightLocomotionComponent->SetLandingInitiationLocationZ(PreviousLocation.Z);
 }
+
+void ASteelheartCharacter::NotifyJumpApex()
+{
+	Super::NotifyJumpApex();
+
+	FlightLocomotionComponent->SetLandingInitiationLocationZ(GetActorLocation().Z);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Dash Handling
 
 void ASteelheartCharacter::Dash()
 {
@@ -342,6 +347,9 @@ void ASteelheartCharacter::InverseDashLerp()
 	DashLerpTimeCounter = DashLerpTime - DashLerpTimeCounter;
 	DashLerpAlpha = 1.f - DashLerpAlpha;
 }
+
+//////////////////////////////////////////////////////////////////////////
+// State Checks
 
 bool ASteelheartCharacter::CheckAngleBetweenVelocityAndRightVector()
 {

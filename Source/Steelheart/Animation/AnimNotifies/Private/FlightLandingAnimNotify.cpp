@@ -7,9 +7,9 @@
 
 void UFlightLandingAnimNotify::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
-	ASteelheartCharacter* SteelheartCharacter = Cast<ASteelheartCharacter>(MeshComp->GetOwner());
-	if (ensure(SteelheartCharacter != nullptr))
+	ACharacter* OwnerCharacter = Cast<ACharacter>(MeshComp->GetOwner());
+	if (ensure(OwnerCharacter != nullptr))
 	{
-		SteelheartCharacter->EnableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+		OwnerCharacter->EnableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 	}
 }
