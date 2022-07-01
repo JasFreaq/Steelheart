@@ -45,6 +45,8 @@ protected:
 	void HandleFlyInput();
 	
 	void HandleDashInput();
+
+	void HandleTakeOffInput();
 		
 	/** Called for forwards/backwards input */
 	void MoveForward(float Value);
@@ -81,7 +83,7 @@ private:
 	void ProcessDashLerp(float DeltaSeconds);
 
 	void InverseDashLerp();
-
+	
 	bool CheckAngleBetweenVelocityAndRightVector();
 
 public:
@@ -108,7 +110,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float CameraBoomDashLength = 600.f;
-			
+
 	float WalkBaseSpeed;
 		
 	float WalkBaseAcceleration;

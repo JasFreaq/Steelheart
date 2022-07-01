@@ -253,3 +253,66 @@ void UFlightLocomotionComponent::SetLandingInitiationLocationZ(float Value)
 {
 	LandingInitiationLocationZ = Value;
 }
+
+void UFlightLocomotionComponent::HandleTakeOffInput()
+{
+	if (OwnerCharacter->GetCharacterMovement()->IsMovingOnGround() && !bIsTakingOff)
+	{
+		bIsTakingOff = true;
+
+		EngageTakeOff();
+	}
+	else if (bIsTakingOff)
+	{
+		bIsTakingOff = false;
+
+		if (bIsTakeOffCharged)
+		{
+			ReleaseTakeOff();
+		}
+		else
+		{
+			float CurrentAnimPosition = OwnerCharacter->GetMesh()->GetPosition();
+
+			OwnerCharacter->StopAnimMontage();
+			OwnerCharacter->PlayAnimMontage(TakeOffMontage, -1.f);
+
+			OwnerCharacter->GetMesh()->SetPosition(CurrentAnimPosition);
+		}
+	}
+}
+
+void UFlightLocomotionComponent::EngageTakeOff()
+{
+	float EngageSectionTime = OwnerCharacter->PlayAnimMontage(TakeOffMontage);
+
+	GetWorld()->GetTimerManager().SetTimer(TakeOffLoopTimerHandle, TakeOffLoopTimerDelegate, EngageSectionTime, false);;
+}
+
+void UFlightLocomotionComponent::LoopTakeOff()
+{
+	if (bIsTakeOffLooping)
+	{
+		bIsTakeOffCharged = true;
+
+		GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
+	}
+	else
+	{
+		bIsTakeOffLooping = true;
+
+		float LoopSectionTime = OwnerCharacter->PlayAnimMontage(TakeOffMontage, 1.f, LoopSectionName);
+
+		GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
+		GetWorld()->GetTimerManager().SetTimer(TakeOffLoopTimerHandle, TakeOffLoopTimerDelegate, LoopSectionTime, false);;
+	}
+}
+
+void UFlightLocomotionComponent::ReleaseTakeOff()
+{
+	bIsTakingOff = false;
+	bIsTakeOffLooping = false;
+	bIsTakeOffCharged = false;
+
+	OwnerCharacter->PlayAnimMontage(TakeOffMontage, 1.f, ReleaseSectionName);
+}

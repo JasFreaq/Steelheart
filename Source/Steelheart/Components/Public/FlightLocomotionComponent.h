@@ -42,6 +42,8 @@ public:
 
 	void SetLandingInitiationLocationZ(float Value);
 
+	void HandleTakeOffInput();
+	
 private:
 	void UpdateFlightLocomotion(float DeltaTime);
 
@@ -53,12 +55,18 @@ private:
 
 	void SmoothResetPitch(float DeltaTime);
 
+	void EngageTakeOff();
+
+	void LoopTakeOff();
+
+	void ReleaseTakeOff();
+
 	UFUNCTION()
 		void ResetDodge();
 
 	UFUNCTION()
 		void ResetDodgeTimer();
-		
+
 public:
 	UPROPERTY(BlueprintReadOnly, Category = AnimationHandling)
 		float XRotationRate;
@@ -73,14 +81,23 @@ public:
 		bool bIsDodgingLeft;
 
 private:
-	UPROPERTY(EditDefaultsOnly, Category = FlightAnimations)
+	UPROPERTY(EditDefaultsOnly, Category = LandingAnimations)
 		UAnimMontage* SoftLandingMontage = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, Category = FlightAnimations)
+	UPROPERTY(EditDefaultsOnly, Category = LandingAnimations)
 		UAnimMontage* MediumLandingMontage = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, Category = FlightAnimations)
+	UPROPERTY(EditDefaultsOnly, Category = LandingAnimations)
 		UAnimMontage* HardLandingMontage = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = TakeOffAnimations)
+		UAnimMontage* TakeOffMontage = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = TakeOffAnimations)
+		FName LoopSectionName = "ChargeLoop";
+
+	UPROPERTY(EditDefaultsOnly, Category = TakeOffAnimations)
+		FName ReleaseSectionName = "TakeOff";
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		float SoftLandingUpperLimit = 500.f;
@@ -135,13 +152,23 @@ private:
 
 	FTimerHandle DodgeResetBufferTimerHandle;
 
+	FTimerHandle TakeOffLoopTimerHandle;
+
 	FTimerDelegate DodgeTimerDelegate;
 
 	FTimerDelegate DodgeResetBufferTimerDelegate;
+
+	FTimerDelegate TakeOffLoopTimerDelegate;
 	
 	bool bWasDashing;
 
 	bool bIsDodging;
+
+	bool bIsTakingOff;
+
+	bool bIsTakeOffLooping;
+
+	bool bIsTakeOffCharged;
 
 	float CapsuleHalfHeight;
 

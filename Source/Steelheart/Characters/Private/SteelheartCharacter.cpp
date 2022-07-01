@@ -95,6 +95,8 @@ void ASteelheartCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ASteelheartCharacter::HandleDashInput);
+
+	PlayerInputComponent->BindAction("TakeOff", IE_Pressed, FlightLocomotionComponent , &UFlightLocomotionComponent::HandleTakeOffInput);
 	
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASteelheartCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASteelheartCharacter::MoveRight);
