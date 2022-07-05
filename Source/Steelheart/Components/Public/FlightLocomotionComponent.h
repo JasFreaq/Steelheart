@@ -42,7 +42,9 @@ public:
 
 	void SetLandingInitiationLocationZ(float Value);
 
-	void HandleTakeOffInput();
+	void EngageTakeOff();
+
+	void ReleaseTakeOff();
 	
 private:
 	void UpdateFlightLocomotion(float DeltaTime);
@@ -54,18 +56,15 @@ private:
 	void ApplyDodgeForce(float DeltaTime);
 
 	void SmoothResetPitch(float DeltaTime);
-
-	void EngageTakeOff();
-
-	void LoopTakeOff();
-
-	void ReleaseTakeOff();
-
+		
 	UFUNCTION()
 		void ResetDodge();
 
 	UFUNCTION()
 		void ResetDodgeTimer();
+
+	UFUNCTION()
+		void LoopTakeOff();
 
 public:
 	UPROPERTY(BlueprintReadOnly, Category = AnimationHandling)
