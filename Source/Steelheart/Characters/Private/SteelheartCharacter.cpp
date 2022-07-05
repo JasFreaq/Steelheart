@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Steelheart/Components/Public/FlightLocomotionComponent.h"
+#include "Steelheart/Components/Public/FlightTakeoffComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ASteelheartCharacter
@@ -55,18 +56,12 @@ ASteelheartCharacter::ASteelheartCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset (to avoid direct content references in C++)
 
-	FlightLocomotionComponent = CreateDefaultSubobject<UFlightLocomotionComponent>(TEXT("FlightLocomotionComponent"));
+	FlightLocomotion = CreateDefaultSubobject<UFlightLocomotionComponent>(TEXT("FlightLocomotionComponent"));
+	FlightTakeoff = CreateDefaultSubobject<UFlightTakeoffComponent>(TEXT("FlightTakeoffComponent"));
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Lifecycle Functions
-
-void ASteelheartCharacter::BeginPlay()
-{
-	Super::BeginPlay();
-
-	FlightLocomotionComponent->InitializeFlightLocomotion(this);
-}
 
 void ASteelheartCharacter::Tick(float DeltaSeconds)
 {
@@ -96,8 +91,8 @@ void ASteelheartCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 
 	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ASteelheartCharacter::HandleDashInput);
 
-	PlayerInputComponent->BindAction("TakeOff", IE_Pressed, FlightLocomotionComponent , &UFlightLocomotionComponent::EngageTakeOff);
-	PlayerInputComponent->BindAction("TakeOff", IE_Released, FlightLocomotionComponent , &UFlightLocomotionComponent::ReleaseTakeOff);
+	PlayerInputComponent->BindAction("TakeOff", IE_Pressed, FlightTakeoff , &UFlightTakeoffComponent::EngageTakeOff);
+	PlayerInputComponent->BindAction("TakeOff", IE_Released, FlightTakeoff , &UFlightTakeoffComponent::ReleaseTakeOff);
 		
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASteelheartCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASteelheartCharacter::MoveRight);
@@ -118,7 +113,7 @@ void ASteelheartCharacter::HandleFlyInput()
 	{
 		if (bIsDashing)
 		{
-			FlightLocomotionComponent->StopDashing();
+			FlightLocomotion->StopDashing();
 			GetCharacterMovement()->MaxAcceleration = WalkDashAcceleration;
 		}
 		else
@@ -126,16 +121,16 @@ void ASteelheartCharacter::HandleFlyInput()
 			GetCharacterMovement()->MaxAcceleration = WalkBaseAcceleration;
 		}
 
-		FlightLocomotionComponent->StopFlying();
+		FlightLocomotion->StopFlying();
 	}
 	else if (GetCharacterMovement()->IsFalling()) //Fly
 	{
 		Super::StopJumping();
 		
-		FlightLocomotionComponent->Fly();
+		FlightLocomotion->Fly();
 		if (bIsDashing)
 		{
-			FlightLocomotionComponent->Dash();
+			FlightLocomotion->Dash();
 		}
 	}
 	else //Jump
@@ -205,11 +200,11 @@ void ASteelheartCharacter::MoveRight(float Value)
 			{
 				if (Value >= 0.f)
 				{
-					FlightLocomotionComponent->RightDodge();
+					FlightLocomotion->RightDodge();
 				}
 				else
 				{
-					FlightLocomotionComponent->LeftDodge();
+					FlightLocomotion->LeftDodge();
 				}
 			}
 		}
@@ -248,20 +243,20 @@ void ASteelheartCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 
-	FlightLocomotionComponent->HandleCharacterLanding(Hit);
+	FlightLocomotion->HandleCharacterLanding(Hit);
 }
 
 void ASteelheartCharacter::OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal,
 	const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta)
 {
-	FlightLocomotionComponent->SetLandingInitiationLocationZ(PreviousLocation.Z);
+	FlightLocomotion->SetLandingInitiationLocationZ(PreviousLocation.Z);
 }
 
 void ASteelheartCharacter::NotifyJumpApex()
 {
 	Super::NotifyJumpApex();
 
-	FlightLocomotionComponent->SetLandingInitiationLocationZ(GetActorLocation().Z);
+	FlightLocomotion->SetLandingInitiationLocationZ(GetActorLocation().Z);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -273,7 +268,7 @@ void ASteelheartCharacter::Dash()
 
 	if (GetCharacterMovement()->IsFlying())
 	{
-		FlightLocomotionComponent->Dash();
+		FlightLocomotion->Dash();
 	}
 	else
 	{
@@ -296,7 +291,7 @@ void ASteelheartCharacter::StopDashing()
 
 	if (GetCharacterMovement()->IsFlying())
 	{
-		FlightLocomotionComponent->StopDashing();
+		FlightLocomotion->StopDashing();
 	}
 	else
 	{

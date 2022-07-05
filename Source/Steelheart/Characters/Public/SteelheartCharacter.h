@@ -8,6 +8,7 @@
 #include "SteelheartCharacter.generated.h"
 
 class UFlightLocomotionComponent;
+class UFlightTakeoffComponent;
 
 UCLASS(config = Game)
 class ASteelheartCharacter : public ACharacter, public IFlightLocomotionInterface
@@ -22,15 +23,17 @@ class ASteelheartCharacter : public ACharacter, public IFlightLocomotionInterfac
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		UCameraComponent* FollowCamera;
 
-	/** Follow camera */
+	/** Flight locomotion */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
-		UFlightLocomotionComponent* FlightLocomotionComponent;
+		UFlightLocomotionComponent* FlightLocomotion;
+
+	/** Flight takeoff */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
+		UFlightTakeoffComponent* FlightTakeoff;
 
 public:
 	ASteelheartCharacter();
-
-	virtual void BeginPlay() override;
-	
+		
 	FORCEINLINE virtual UCameraComponent* GetCameraComponent() override { return FollowCamera; }
 
 	FORCEINLINE virtual bool IsDashing() override { return bIsDashing; }

@@ -3,17 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "FlightComponent.h"
 #include "FlightLocomotionComponent.generated.h"
 
-class IFlightLocomotionInterface;
-
-class UCameraComponent;
-class UCapsuleComponent;
-class UCharacterMovementComponent;
-
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class STEELHEART_API UFlightLocomotionComponent : public UActorComponent
+class STEELHEART_API UFlightLocomotionComponent : public UFlightComponent
 {
 	GENERATED_BODY()
 
@@ -21,8 +15,6 @@ public:
 	// Sets default values for this component's properties
 	UFlightLocomotionComponent();
 	
-	void InitializeFlightLocomotion(ACharacter* OwnerCharacterRef);
-
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -42,10 +34,10 @@ public:
 
 	void SetLandingInitiationLocationZ(float Value);
 
-	void EngageTakeOff();
+protected:
+	// Called when the game starts
+	virtual void BeginPlay() override;
 
-	void ReleaseTakeOff();
-	
 private:
 	void UpdateFlightLocomotion(float DeltaTime);
 
@@ -62,12 +54,6 @@ private:
 
 	UFUNCTION()
 		void ResetDodgeTimer();
-
-	UFUNCTION()
-		void LoopTakeOff();
-
-	UFUNCTION()
-		void EndTakeOff();
 
 public:
 	UPROPERTY(BlueprintReadOnly, Category = AnimationHandling)
@@ -92,23 +78,11 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		UAnimMontage* HardLandingMontage = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, Category = TakingOff)
-		UAnimMontage* TakeOffMontage = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, Category = TakingOff)
-		FName LoopSectionName = "ChargeLoop";
-
-	UPROPERTY(EditDefaultsOnly, Category = TakingOff)
-		FName ReleaseSectionName = "TakeOff";
-
 	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		float SoftLandingUpperLimit = 500.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		float HardLandingLowerLimit = 1200.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = TakingOff)
-		float BaseTakeOffForce = 3500000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightLocomotion)
 		float BaseSpeed = 850.f;
@@ -143,43 +117,17 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = AnimationHandling)
 		float DodgeBufferTime = 0.1f;
 
-	ACharacter* OwnerCharacter = nullptr;
-
-	IFlightLocomotionInterface* FlightLocomotionInterface = nullptr;
-
-	UCameraComponent* CameraComponent = nullptr;
-		
-	UCapsuleComponent* CapsuleComponent = nullptr;
-	
-	UCharacterMovementComponent* CharacterMovement = nullptr;
-
 	FTimerHandle DodgeTimerHandle;
 
 	FTimerHandle DodgeResetBufferTimerHandle;
 
-	FTimerHandle TakeOffLoopTimerHandle;
-
-	FTimerHandle TakeOffEndTimerHandle;
-
 	FTimerDelegate DodgeTimerDelegate;
 
 	FTimerDelegate DodgeResetBufferTimerDelegate;
-
-	FTimerDelegate TakeOffLoopTimerDelegate;
-
-	FTimerDelegate TakeOffEndTimerDelegate;
 	
 	bool bWasDashing;
 
 	bool bIsDodging;
-
-	bool bIsTakeOffInitiating;
-
-	bool bIsTakeOffLooping;
-
-	bool bIsTakeOffCharged;
-
-	bool bIsTakingOff;
 
 	float CapsuleHalfHeight;
 

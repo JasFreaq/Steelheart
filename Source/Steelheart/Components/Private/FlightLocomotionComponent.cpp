@@ -19,33 +19,20 @@ UFlightLocomotionComponent::UFlightLocomotionComponent()
 
 	DodgeTimerDelegate.BindUFunction(this, "ResetDodge");
 	DodgeResetBufferTimerDelegate.BindUFunction(this, "ResetDodgeTimer");
-
-	TakeOffLoopTimerDelegate.BindUFunction(this, "LoopTakeOff");
-	TakeOffEndTimerDelegate.BindUFunction(this, "EndTakeOff");
 }
 
-void UFlightLocomotionComponent::InitializeFlightLocomotion(ACharacter* OwnerCharacterRef)
+//////////////////////////////////////////////////////////////////////////
+// Lifecycle Functions
+
+void UFlightLocomotionComponent::BeginPlay()
 {
-	OwnerCharacter = OwnerCharacterRef;
-	FlightLocomotionInterface = Cast<IFlightLocomotionInterface>(OwnerCharacter);
+	Super::BeginPlay();
 
-	if (ensure(FlightLocomotionInterface != nullptr))
-	{
-		CameraComponent = FlightLocomotionInterface->GetCameraComponent();
-		CapsuleComponent = OwnerCharacterRef->GetCapsuleComponent();
-		CharacterMovement = OwnerCharacterRef->GetCharacterMovement();
+	CapsuleHalfHeight = CapsuleComponent->GetUnscaledCapsuleHalfHeight();
 
-		CapsuleHalfHeight = CapsuleComponent->GetUnscaledCapsuleHalfHeight();
-
-		CharacterMovement->MaxAcceleration = BaseAcceleration;
-		CharacterMovement->BrakingDecelerationFlying = BrakingDecelerationFlying;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Character passed to Initialize FlightLocomotionComponent does not have FlightLocomotionInterface."));
-	}
+	CharacterMovement->MaxAcceleration = BaseAcceleration;
+	CharacterMovement->BrakingDecelerationFlying = BrakingDecelerationFlying;
 }
-
 
 // Called every frame
 void UFlightLocomotionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -60,11 +47,6 @@ void UFlightLocomotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
 	if (bWasDashing)
 	{
 		SmoothResetPitch(DeltaTime);
-	}
-
-	if (bIsTakingOff)
-	{
-		CharacterMovement->AddForce(FVector::UpVector * BaseTakeOffForce);
 	}
 }
 
@@ -260,81 +242,4 @@ void UFlightLocomotionComponent::HandleCharacterLanding(const FHitResult& Hit)
 void UFlightLocomotionComponent::SetLandingInitiationLocationZ(float Value)
 {
 	LandingInitiationLocationZ = Value;
-}
-
-void UFlightLocomotionComponent::EngageTakeOff()
-{
-	if (OwnerCharacter->GetCharacterMovement()->IsMovingOnGround() && !bIsTakeOffInitiating)
-	{
-		bIsTakeOffInitiating = true;
-
-		OwnerCharacter->PlayAnimMontage(TakeOffMontage);
-
-		int32 EngageSectionIndex = TakeOffMontage->GetSectionIndex("Default");
-		float EngageSectionLength = TakeOffMontage->GetSectionLength(EngageSectionIndex);
-		
-		GetWorld()->GetTimerManager().SetTimer(TakeOffLoopTimerHandle, TakeOffLoopTimerDelegate, EngageSectionLength, false);;
-	}
-}
-
-void UFlightLocomotionComponent::LoopTakeOff()
-{
-	if (bIsTakeOffLooping)
-	{
-		bIsTakeOffCharged = true;
-
-		GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
-	}
-	else
-	{
-		bIsTakeOffLooping = true;
-
-		OwnerCharacter->PlayAnimMontage(TakeOffMontage, 1.f, LoopSectionName);
-
-		int32 LoopSectionIndex = TakeOffMontage->GetSectionIndex(LoopSectionName);
-		float LoopSectionLength = TakeOffMontage->GetSectionLength(LoopSectionIndex);
-
-		GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
-		GetWorld()->GetTimerManager().SetTimer(TakeOffLoopTimerHandle, TakeOffLoopTimerDelegate, LoopSectionLength, false);;
-	}
-}
-
-void UFlightLocomotionComponent::EndTakeOff()
-{
-	bIsTakingOff = false;
-
-	OwnerCharacter->StopAnimMontage();
-	GetWorld()->GetTimerManager().ClearTimer(TakeOffEndTimerHandle);
-}
-
-void UFlightLocomotionComponent::ReleaseTakeOff()
-{
-	if (bIsTakeOffInitiating)
-	{
-		bIsTakeOffInitiating = false;
-
-		if (bIsTakeOffCharged)
-		{
-			bIsTakeOffLooping = false;
-			bIsTakeOffCharged = false;
-
-			bIsTakingOff = true;
-			OwnerCharacter->PlayAnimMontage(TakeOffMontage, 0.75f, ReleaseSectionName);
-			CharacterMovement->SetMovementMode(MOVE_Flying);
-			
-			int32 ReleaseSectionIndex = TakeOffMontage->GetSectionIndex(LoopSectionName);
-			float ReleaseSectionLength = TakeOffMontage->GetSectionLength(ReleaseSectionIndex);
-			
-			GetWorld()->GetTimerManager().SetTimer(TakeOffEndTimerHandle, TakeOffEndTimerDelegate, ReleaseSectionLength, false);;
-		}
-		else
-		{
-			float CurrentAnimPosition = OwnerCharacter->GetMesh()->GetPosition();
-
-			OwnerCharacter->StopAnimMontage();
-			OwnerCharacter->PlayAnimMontage(TakeOffMontage, -1.f);
-
-			OwnerCharacter->GetMesh()->SetPosition(CurrentAnimPosition);
-		}
-	}
 }
