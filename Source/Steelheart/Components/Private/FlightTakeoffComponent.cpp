@@ -3,12 +3,8 @@
 
 #include "Steelheart/Components/Public/FlightTakeoffComponent.h"
 
-#include "Camera/CameraComponent.h"
-#include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Kismet/GameplayStatics.h"
-#include "Steelheart/Interfaces/Public/FlightLocomotionInterface.h"
 
 // Sets default values for this component's properties
 UFlightTakeoffComponent::UFlightTakeoffComponent()
@@ -21,16 +17,21 @@ UFlightTakeoffComponent::UFlightTakeoffComponent()
 	TakeOffEndTimerDelegate.BindUFunction(this, "EndTakeOff");
 }
 
-
-// Called when the game starts
 void UFlightTakeoffComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
-	
-}
+	BaseBlendOutTime = TakeOffMontage->BlendOut.GetBlendTime();
 
+	int32 EngageSectionIndex = TakeOffMontage->GetSectionIndex("Default");
+	EngageSectionLength = TakeOffMontage->GetSectionLength(EngageSectionIndex);
+
+	int32 LoopSectionIndex = TakeOffMontage->GetSectionIndex(LoopSectionName);
+	LoopSectionLength = TakeOffMontage->GetSectionLength(LoopSectionIndex);
+
+	int32 ReleaseSectionIndex = TakeOffMontage->GetSectionIndex(ReleaseSectionName);
+	ReleaseSectionLength = TakeOffMontage->GetSectionLength(ReleaseSectionIndex);
+}
 
 // Called every frame
 void UFlightTakeoffComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -39,7 +40,11 @@ void UFlightTakeoffComponent::TickComponent(float DeltaTime, ELevelTick TickType
 
 	if (bIsTakingOff)
 	{
-		CharacterMovement->AddForce(FVector::UpVector * BaseTakeOffForce);
+		CharacterMovement->AddForce(FVector::UpVector * CurrentTakeOffForce);
+
+		ReleaseTimeCounter += DeltaTime;
+		float ReleaseForceAlpha = ReleaseTimeCounter / ReleaseSectionLength;
+		CurrentTakeOffForce = FMath::Lerp(BaseTakeOffForce, 0.f, ReleaseForceAlpha);
 	}
 }
 
@@ -49,11 +54,9 @@ void UFlightTakeoffComponent::EngageTakeOff()
 	{
 		bIsTakeOffInitiating = true;
 
+		TakeOffMontage->BlendOut.SetBlendTime(BaseBlendOutTime);
 		OwnerCharacter->PlayAnimMontage(TakeOffMontage);
-
-		int32 EngageSectionIndex = TakeOffMontage->GetSectionIndex("Default");
-		float EngageSectionLength = TakeOffMontage->GetSectionLength(EngageSectionIndex);
-
+				
 		GetWorld()->GetTimerManager().SetTimer(TakeOffLoopTimerHandle, TakeOffLoopTimerDelegate, EngageSectionLength, false);;
 	}
 }
@@ -70,22 +73,20 @@ void UFlightTakeoffComponent::ReleaseTakeOff()
 			bIsTakeOffCharged = false;
 
 			bIsTakingOff = true;
-			OwnerCharacter->PlayAnimMontage(TakeOffMontage, 0.75f, ReleaseSectionName);
+			OwnerCharacter->PlayAnimMontage(TakeOffMontage, RATE_SCALE, ReleaseSectionName);
 			CharacterMovement->SetMovementMode(MOVE_Flying);
 
-			int32 ReleaseSectionIndex = TakeOffMontage->GetSectionIndex(LoopSectionName);
-			float ReleaseSectionLength = TakeOffMontage->GetSectionLength(ReleaseSectionIndex);
-
+			ReleaseTimeCounter = 0.f;
+			CurrentTakeOffForce = BaseTakeOffForce;
+			
 			GetWorld()->GetTimerManager().SetTimer(TakeOffEndTimerHandle, TakeOffEndTimerDelegate, ReleaseSectionLength, false);;
 		}
-		else
+		else 
 		{
-			float CurrentAnimPosition = OwnerCharacter->GetMesh()->GetPosition();
-
-			OwnerCharacter->StopAnimMontage();
-			OwnerCharacter->PlayAnimMontage(TakeOffMontage, -1.f);
-
-			OwnerCharacter->GetMesh()->SetPosition(CurrentAnimPosition);
+			TakeOffMontage->BlendOut.SetBlendTime(EngageSectionLength / 2);
+			OwnerCharacter->StopAnimMontage(TakeOffMontage);
+			
+			GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
 		}
 	}
 }
@@ -102,11 +103,8 @@ void UFlightTakeoffComponent::LoopTakeOff()
 	{
 		bIsTakeOffLooping = true;
 
-		OwnerCharacter->PlayAnimMontage(TakeOffMontage, 1.f, LoopSectionName);
-
-		int32 LoopSectionIndex = TakeOffMontage->GetSectionIndex(LoopSectionName);
-		float LoopSectionLength = TakeOffMontage->GetSectionLength(LoopSectionIndex);
-
+		OwnerCharacter->PlayAnimMontage(TakeOffMontage, RATE_SCALE, LoopSectionName);
+		
 		GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
 		GetWorld()->GetTimerManager().SetTimer(TakeOffLoopTimerHandle, TakeOffLoopTimerDelegate, LoopSectionLength, false);;
 	}

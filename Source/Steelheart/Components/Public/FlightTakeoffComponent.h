@@ -6,6 +6,7 @@
 #include "FlightComponent.h"
 #include "FlightTakeoffComponent.generated.h"
 
+#define RATE_SCALE 1.f
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class STEELHEART_API UFlightTakeoffComponent : public UFlightComponent
@@ -53,7 +54,19 @@ private:
 	FTimerDelegate TakeOffLoopTimerDelegate;
 
 	FTimerDelegate TakeOffEndTimerDelegate;
-	
+
+	float BaseBlendOutTime;
+
+	float EngageSectionLength;
+
+	float LoopSectionLength;
+
+	float ReleaseSectionLength;
+
+	float ReleaseTimeCounter;
+
+	float CurrentTakeOffForce;
+
 	bool bIsTakeOffInitiating;
 
 	bool bIsTakeOffLooping;
