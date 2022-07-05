@@ -66,6 +66,9 @@ private:
 	UFUNCTION()
 		void LoopTakeOff();
 
+	UFUNCTION()
+		void EndTakeOff();
+
 public:
 	UPROPERTY(BlueprintReadOnly, Category = AnimationHandling)
 		float XRotationRate;
@@ -80,22 +83,22 @@ public:
 		bool bIsDodgingLeft;
 
 private:
-	UPROPERTY(EditDefaultsOnly, Category = LandingAnimations)
+	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		UAnimMontage* SoftLandingMontage = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, Category = LandingAnimations)
+	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		UAnimMontage* MediumLandingMontage = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, Category = LandingAnimations)
+	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		UAnimMontage* HardLandingMontage = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, Category = TakeOffAnimations)
+	UPROPERTY(EditDefaultsOnly, Category = TakingOff)
 		UAnimMontage* TakeOffMontage = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, Category = TakeOffAnimations)
+	UPROPERTY(EditDefaultsOnly, Category = TakingOff)
 		FName LoopSectionName = "ChargeLoop";
 
-	UPROPERTY(EditDefaultsOnly, Category = TakeOffAnimations)
+	UPROPERTY(EditDefaultsOnly, Category = TakingOff)
 		FName ReleaseSectionName = "TakeOff";
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
@@ -104,23 +107,26 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		float HardLandingLowerLimit = 1200.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = TakingOff)
+		float BaseTakeOffForce = 3500000.f;
+
 	UPROPERTY(EditDefaultsOnly, Category = FlightLocomotion)
 		float BaseSpeed = 850.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightLocomotion)
-		float DashSpeed = 2000.f;
+		float DashSpeed = 9000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightLocomotion)
 		float BaseAcceleration = 2500.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightLocomotion)
-		float DashAcceleration = 8000.f;
+		float DashAcceleration = 80000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightLocomotion)
-		float BaseDodgeForce = 8000.f;
+		float BaseDodgeForce = 32000000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightLocomotion)
-		float BrakingDecelerationFlying = 1400.f;
+		float BrakingDecelerationFlying = 2800.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightLocomotionRatios)
 		float RotationInterpSpeed = 8.f;
@@ -153,21 +159,27 @@ private:
 
 	FTimerHandle TakeOffLoopTimerHandle;
 
+	FTimerHandle TakeOffEndTimerHandle;
+
 	FTimerDelegate DodgeTimerDelegate;
 
 	FTimerDelegate DodgeResetBufferTimerDelegate;
 
 	FTimerDelegate TakeOffLoopTimerDelegate;
+
+	FTimerDelegate TakeOffEndTimerDelegate;
 	
 	bool bWasDashing;
 
 	bool bIsDodging;
 
-	bool bIsTakingOff;
+	bool bIsTakeOffInitiating;
 
 	bool bIsTakeOffLooping;
 
 	bool bIsTakeOffCharged;
+
+	bool bIsTakingOff;
 
 	float CapsuleHalfHeight;
 

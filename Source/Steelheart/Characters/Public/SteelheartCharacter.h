@@ -45,9 +45,7 @@ protected:
 	void HandleFlyInput();
 	
 	void HandleDashInput();
-
-	void HandleTakeOffInput();
-		
+			
 	/** Called for forwards/backwards input */
 	void MoveForward(float Value);
 
@@ -56,7 +54,7 @@ protected:
 
 	/** Called for upwards/downwards input */
 	void MoveUp(float Value);
-
+	
 	/** 
 	 * Called via input to turn at a given rate. 
 	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate

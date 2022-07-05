@@ -98,7 +98,7 @@ void ASteelheartCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 
 	PlayerInputComponent->BindAction("TakeOff", IE_Pressed, FlightLocomotionComponent , &UFlightLocomotionComponent::EngageTakeOff);
 	PlayerInputComponent->BindAction("TakeOff", IE_Released, FlightLocomotionComponent , &UFlightLocomotionComponent::ReleaseTakeOff);
-	
+		
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASteelheartCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASteelheartCharacter::MoveRight);
 	PlayerInputComponent->BindAxis("MoveUp", this, &ASteelheartCharacter::MoveUp);
