@@ -38,6 +38,8 @@ public:
 
 	FORCEINLINE virtual bool IsDashing() override { return bIsDashing; }
 
+	FORCEINLINE virtual void SetLocomotionEnabled(bool Enabled) override { bLocomotionEnabled = Enabled; }
+
 protected:
 	virtual void Tick(float DeltaSeconds) override;
 
@@ -125,4 +127,6 @@ private:
 	bool bProcessDashLerp;
 
 	bool bProcessStopDashLerp;
+
+	bool bLocomotionEnabled;
 };

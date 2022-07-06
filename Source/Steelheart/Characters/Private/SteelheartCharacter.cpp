@@ -58,6 +58,8 @@ ASteelheartCharacter::ASteelheartCharacter()
 
 	FlightLocomotion = CreateDefaultSubobject<UFlightLocomotionComponent>(TEXT("FlightLocomotionComponent"));
 	FlightTakeoff = CreateDefaultSubobject<UFlightTakeoffComponent>(TEXT("FlightTakeoffComponent"));
+
+	bLocomotionEnabled = true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -109,46 +111,52 @@ void ASteelheartCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 
 void ASteelheartCharacter::HandleFlyInput()
 {
-	if (GetCharacterMovement()->IsFlying()) //Stop Flying
+	if (bLocomotionEnabled)
 	{
-		if (bIsDashing)
+		if (GetCharacterMovement()->IsFlying()) //Stop Flying
 		{
-			FlightLocomotion->StopDashing();
-			GetCharacterMovement()->MaxAcceleration = WalkDashAcceleration;
-		}
-		else
-		{
-			GetCharacterMovement()->MaxAcceleration = WalkBaseAcceleration;
-		}
+			if (bIsDashing)
+			{
+				FlightLocomotion->StopDashing();
+				GetCharacterMovement()->MaxAcceleration = WalkDashAcceleration;
+			}
+			else
+			{
+				GetCharacterMovement()->MaxAcceleration = WalkBaseAcceleration;
+			}
 
-		FlightLocomotion->StopFlying();
-	}
-	else if (GetCharacterMovement()->IsFalling()) //Fly
-	{
-		Super::StopJumping();
-		
-		FlightLocomotion->Fly();
-		if (bIsDashing)
-		{
-			FlightLocomotion->Dash();
+			FlightLocomotion->StopFlying();
 		}
-	}
-	else //Jump
-	{
-		Super::Jump();
-		GetCharacterMovement()->bNotifyApex = true;
+		else if (GetCharacterMovement()->IsFalling()) //Fly
+		{
+			Super::StopJumping();
+
+			FlightLocomotion->Fly();
+			if (bIsDashing)
+			{
+				FlightLocomotion->Dash();
+			}
+		}
+		else //Jump
+		{
+			Super::Jump();
+			GetCharacterMovement()->bNotifyApex = true;
+		}
 	}
 }
 
 void ASteelheartCharacter::HandleDashInput()
 {
-	if (bIsDashing)
+	if (bLocomotionEnabled)
 	{
-		StopDashing();
-	}
-	else
-	{
-		Dash();		
+		if (bIsDashing)
+		{
+			StopDashing();
+		}
+		else
+		{
+			Dash();		
+		}
 	}
 }
 
@@ -157,70 +165,79 @@ void ASteelheartCharacter::HandleDashInput()
 
 void ASteelheartCharacter::MoveForward(float Value)
 {
-	if ((Controller != nullptr) && (Value != 0.0f))
+	if (bLocomotionEnabled)
 	{
-		FVector Direction;
-		if (GetCharacterMovement()->IsFlying())
+		if ((Controller != nullptr) && (Value != 0.0f))
 		{
-			Direction = FollowCamera->GetForwardVector();
+			FVector Direction;
+			if (GetCharacterMovement()->IsFlying())
+			{
+				Direction = FollowCamera->GetForwardVector();
+			}
+			else
+			{
+				// find out which way is forward
+				const FRotator Rotation = Controller->GetControlRotation();
+				const FRotator YawRotation(0, Rotation.Yaw, 0);
+
+				// get forward vector
+				Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+			}
+
+			AddMovementInput(Direction, Value);
 		}
-		else
+
+		if (bIsDashing && Value <= 0.8f)
 		{
-			// find out which way is forward
-			const FRotator Rotation = Controller->GetControlRotation();
-			const FRotator YawRotation(0, Rotation.Yaw, 0);
-
-			// get forward vector
-			Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+			StopDashing();
 		}
-
-		AddMovementInput(Direction, Value);
-	}
-
-	if (bIsDashing && Value <= 0.8f)
-	{
-		StopDashing();
 	}
 }
 
 void ASteelheartCharacter::MoveRight(float Value)
 {
-	if ((Controller != nullptr) && (Value != 0.0f))
+	if (bLocomotionEnabled)
 	{
-		// find out which way is right
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-
-		// get right vector 
-		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		
-		if (GetCharacterMovement()->IsFlying() && bIsDashing)
+		if ((Controller != nullptr) && (Value != 0.0f))
 		{
-			if (FMath::Abs(Value) >= 0.8f)
+			// find out which way is right
+			const FRotator Rotation = Controller->GetControlRotation();
+			const FRotator YawRotation(0, Rotation.Yaw, 0);
+
+			// get right vector 
+			const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+			if (GetCharacterMovement()->IsFlying() && bIsDashing)
 			{
-				if (Value >= 0.f)
+				if (FMath::Abs(Value) >= 0.8f)
 				{
-					FlightLocomotion->RightDodge();
-				}
-				else
-				{
-					FlightLocomotion->LeftDodge();
+					if (Value >= 0.f)
+					{
+						FlightLocomotion->RightDodge();
+					}
+					else
+					{
+						FlightLocomotion->LeftDodge();
+					}
 				}
 			}
-		}
-		else // add movement in that direction
-		{
-			AddMovementInput(Direction, Value);
+			else // add movement in that direction
+			{
+				AddMovementInput(Direction, Value);
+			}
 		}
 	}
 }
 
 void ASteelheartCharacter::MoveUp(float Value)
 {
-	if ((Controller != nullptr) && (Value != 0.0f))
+	if (bLocomotionEnabled)
 	{
-		// add movement in upwards direction
-		AddMovementInput(FVector::UpVector, Value);
+		if ((Controller != nullptr) && (Value != 0.0f))
+		{
+			// add movement in upwards direction
+			AddMovementInput(FVector::UpVector, Value);
+		}
 	}
 }
 

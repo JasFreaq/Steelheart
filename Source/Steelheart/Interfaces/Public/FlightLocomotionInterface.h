@@ -29,4 +29,6 @@ public:
 	virtual UCameraComponent* GetCameraComponent() = 0;
 
 	virtual bool IsDashing() = 0;
+
+	virtual void SetLocomotionEnabled(bool Enabled) = 0;
 };

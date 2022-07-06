@@ -5,6 +5,7 @@
 
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Steelheart/Interfaces/Public/FlightLocomotionInterface.h"
 
 // Sets default values for this component's properties
 UFlightTakeoffComponent::UFlightTakeoffComponent()
@@ -53,6 +54,7 @@ void UFlightTakeoffComponent::EngageTakeOff()
 	if (OwnerCharacter->GetCharacterMovement()->IsMovingOnGround() && !bIsTakeOffInitiating)
 	{
 		bIsTakeOffInitiating = true;
+		FlightLocomotionInterface->SetLocomotionEnabled(false);
 
 		TakeOffMontage->BlendOut.SetBlendTime(BaseBlendOutTime);
 		OwnerCharacter->PlayAnimMontage(TakeOffMontage);
@@ -66,6 +68,7 @@ void UFlightTakeoffComponent::ReleaseTakeOff()
 	if (bIsTakeOffInitiating)
 	{
 		bIsTakeOffInitiating = false;
+		float SectionLength;
 
 		if (bIsTakeOffCharged)
 		{
@@ -78,16 +81,19 @@ void UFlightTakeoffComponent::ReleaseTakeOff()
 
 			ReleaseTimeCounter = 0.f;
 			CurrentTakeOffForce = BaseTakeOffForce;
-			
-			GetWorld()->GetTimerManager().SetTimer(TakeOffEndTimerHandle, TakeOffEndTimerDelegate, ReleaseSectionLength, false);;
+
+			SectionLength = ReleaseSectionLength;
 		}
 		else 
 		{
 			TakeOffMontage->BlendOut.SetBlendTime(EngageSectionLength / 2);
 			OwnerCharacter->StopAnimMontage(TakeOffMontage);
-			
+
+			SectionLength = EngageSectionLength / 2;
 			GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
 		}
+
+		GetWorld()->GetTimerManager().SetTimer(TakeOffEndTimerHandle, TakeOffEndTimerDelegate, SectionLength, false);;
 	}
 }
 
@@ -113,6 +119,7 @@ void UFlightTakeoffComponent::LoopTakeOff()
 void UFlightTakeoffComponent::EndTakeOff()
 {
 	bIsTakingOff = false;
+	FlightLocomotionInterface->SetLocomotionEnabled(true);
 
 	OwnerCharacter->StopAnimMontage();
 	GetWorld()->GetTimerManager().ClearTimer(TakeOffEndTimerHandle);
