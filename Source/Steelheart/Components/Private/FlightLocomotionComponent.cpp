@@ -9,6 +9,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Steelheart/Interfaces/Public/FlightLocomotionInterface.h"
+#include "DrawDebugHelpers.h"
 
 // Sets default values for this component's properties
 UFlightLocomotionComponent::UFlightLocomotionComponent()
@@ -19,6 +20,9 @@ UFlightLocomotionComponent::UFlightLocomotionComponent()
 
 	DodgeTimerDelegate.BindUFunction(this, "ResetDodge");
 	DodgeResetBufferTimerDelegate.BindUFunction(this, "ResetDodgeTimer");
+
+	DivebombTimerDelegate.BindUFunction(this, "InitiateDivebomb");
+	DivebombLandTimerDelegate.BindUFunction(this, "EndDivebombLand");
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -32,6 +36,15 @@ void UFlightLocomotionComponent::BeginPlay()
 
 	CharacterMovement->MaxAcceleration = BaseAcceleration;
 	CharacterMovement->BrakingDecelerationFlying = BrakingDecelerationFlying;
+
+	if (ensure(DivebombMontage != nullptr))
+	{
+		int32 StartSectionIndex = DivebombMontage->GetSectionIndex("Default");
+		DivebombStartSectionLength = DivebombMontage->GetSectionLength(StartSectionIndex) / DIVEBOMB_RATE_SCALE;
+
+		int32 LandSectionIndex = DivebombMontage->GetSectionIndex(DivebombLandSectionName);
+		DivebombLandSectionLength = DivebombMontage->GetSectionLength(LandSectionIndex) / DIVEBOMB_RATE_SCALE;
+	}
 }
 
 // Called every frame
@@ -43,23 +56,21 @@ void UFlightLocomotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
 	{
 		UpdateFlightLocomotion(DeltaTime);
 	}
+	else if (CharacterMovement->IsFalling())
+	{
+		if (bInitiatedDivebomb)
+		{
+			UpdateDivebomb(DeltaTime);
+		}
+		else
+		{
+			InitiateDivebombStart();
+		}
+	}
 	
 	if (bWasDashing)
 	{
 		SmoothResetPitch(DeltaTime);
-	}
-}
-
-
-void UFlightLocomotionComponent::UpdateFlightLocomotion(float DeltaTime)
-{
-	UpdateFlightRotation(DeltaTime);
-
-	UpdateBlendRates();
-
-	if (bIsDodgingRight || bIsDodgingLeft)
-	{
-		ApplyDodgeForce(DeltaTime);
 	}
 }
 
@@ -134,6 +145,52 @@ void UFlightLocomotionComponent::LeftDodge()
 	}
 }
 
+void UFlightLocomotionComponent::HandleCharacterLanding(const FHitResult& Hit)
+{
+	if (CharacterMovement->IsWalkable(Hit))
+	{
+		float FallDistance = LandingInitiationLocationZ - OwnerCharacter->GetActorLocation().Z;
+
+		if (FallDistance <= HardLandingLimit)
+		{
+			OwnerCharacter->DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+
+			if (FallDistance <= SoftLandingLimit)
+			{
+				if (ensure(SoftLandingMontage != nullptr))
+					OwnerCharacter->PlayAnimMontage(SoftLandingMontage);
+			}
+			else if (FallDistance <= MediumLandingLimit)
+			{
+				if (ensure(MediumLandingMontage != nullptr))
+					OwnerCharacter->PlayAnimMontage(MediumLandingMontage);
+			}
+			else
+			{
+				if (ensure(HardLandingMontage != nullptr))
+					OwnerCharacter->PlayAnimMontage(HardLandingMontage);
+			}
+		}
+	}
+}
+
+void UFlightLocomotionComponent::SetLandingInitiationLocationZ(float Value)
+{
+	LandingInitiationLocationZ = Value;
+}
+
+void UFlightLocomotionComponent::UpdateFlightLocomotion(float DeltaTime)
+{
+	UpdateFlightRotation(DeltaTime);
+
+	UpdateBlendRates();
+
+	if (bIsDodgingRight || bIsDodgingLeft)
+	{
+		ApplyDodgeForce(DeltaTime);
+	}
+}
+
 void UFlightLocomotionComponent::UpdateFlightRotation(float DeltaTime)
 {
 	FRotator CurrentRotation = CapsuleComponent->GetComponentRotation();
@@ -143,7 +200,7 @@ void UFlightLocomotionComponent::UpdateFlightRotation(float DeltaTime)
 	{
 		TargetRotation.Pitch = 0.f;
 	}
-	
+
 	FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, RotationInterpSpeed);
 	OwnerCharacter->SetActorRotation(NewRotation);
 }
@@ -197,6 +254,47 @@ void UFlightLocomotionComponent::SmoothResetPitch(float DeltaTime)
 	}
 }
 
+void UFlightLocomotionComponent::InitiateDivebombStart()
+{
+	float FallDistance = LandingInitiationLocationZ - OwnerCharacter->GetActorLocation().Z;
+	if (FallDistance > HardLandingLimit)
+	{
+		if (ensure(DivebombMontage != nullptr))
+			OwnerCharacter->PlayAnimMontage(DivebombMontage);
+		
+		bInitiatedDivebomb = true;
+
+		GetWorld()->GetTimerManager().SetTimer(DivebombTimerHandle, DivebombTimerDelegate, DivebombStartSectionLength, false);
+	}
+}
+
+void UFlightLocomotionComponent::UpdateDivebomb(float DeltaTime)
+{
+	if (bIsDivebombing)
+	{
+		CharacterMovement->AddForce(-FVector::UpVector * CurrentDivebombForce);
+		CurrentDivebombForce = FMath::FInterpTo(CurrentDivebombForce, 0.f, DeltaTime, DivebombInterpSpeed);
+		
+		FHitResult Hit;
+		FVector TraceStart = OwnerCharacter->GetActorLocation();
+		FVector TraceEnd = TraceStart - FVector::UpVector * CapsuleHalfHeight * DivebombLineTraceToCheckFloorRatio;
+		FCollisionQueryParams TraceParams;
+		TraceParams.AddIgnoredActor(OwnerCharacter);
+		TraceParams.bTraceComplex = true;
+		
+		if (GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic, TraceParams)
+			&& CharacterMovement->IsWalkable(Hit))
+		{			
+			if (ensure(DivebombMontage != nullptr))
+			{
+				OwnerCharacter->PlayAnimMontage(DivebombMontage, 1.f, DivebombLandSectionName);
+								
+				GetWorld()->GetTimerManager().SetTimer(DivebombLandTimerHandle, DivebombLandTimerDelegate, DivebombLandSectionLength, false);
+			}
+		}
+	}
+}
+
 void UFlightLocomotionComponent::ResetDodge()
 {
 	bIsDodgingRight = false;
@@ -209,37 +307,24 @@ void UFlightLocomotionComponent::ResetDodge()
 void UFlightLocomotionComponent::ResetDodgeTimer()
 {
 	bIsDodging = false;
-		
+
 	GetWorld()->GetTimerManager().ClearTimer(DodgeResetBufferTimerHandle);
 }
 
-void UFlightLocomotionComponent::HandleCharacterLanding(const FHitResult& Hit)
+void UFlightLocomotionComponent::InitiateDivebomb()
 {
-	OwnerCharacter->DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-	
-	if (CharacterMovement->IsWalkable(Hit))
-	{
-		float FloorDistance = LandingInitiationLocationZ - OwnerCharacter->GetActorLocation().Z;
+	bIsDivebombing = true;
 
-		if (FloorDistance <= SoftLandingUpperLimit)
-		{
-			if (ensure(SoftLandingMontage != nullptr))
-				OwnerCharacter->PlayAnimMontage(SoftLandingMontage);
-		}
-		else if (FloorDistance > HardLandingLowerLimit)
-		{
-			if (ensure(HardLandingMontage != nullptr))
-				OwnerCharacter->PlayAnimMontage(HardLandingMontage);
-		}
-		else // Medium Landing
-		{
-			if (ensure(MediumLandingMontage != nullptr))
-				OwnerCharacter->PlayAnimMontage(MediumLandingMontage);
-		}
-	}
+	CurrentDivebombForce = BaseDivebombForce;
+	GetWorld()->GetTimerManager().ClearTimer(DivebombTimerHandle);
 }
 
-void UFlightLocomotionComponent::SetLandingInitiationLocationZ(float Value)
+void UFlightLocomotionComponent::EndDivebombLand()
 {
-	LandingInitiationLocationZ = Value;
+	bIsDivebombing = false;
+	bInitiatedDivebomb = false;
+	LandingInitiationLocationZ = 0.f;
+
+	OwnerCharacter->StopAnimMontage();
+	GetWorld()->GetTimerManager().ClearTimer(DivebombLandTimerHandle);
 }

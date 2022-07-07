@@ -6,7 +6,9 @@
 #include "FlightComponent.h"
 #include "FlightLocomotionComponent.generated.h"
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+#define DIVEBOMB_RATE_SCALE 2.f
+
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class STEELHEART_API UFlightLocomotionComponent : public UFlightComponent
 {
 	GENERATED_BODY()
@@ -48,12 +50,22 @@ private:
 	void ApplyDodgeForce(float DeltaTime);
 
 	void SmoothResetPitch(float DeltaTime);
-		
+
+	void InitiateDivebombStart();
+
+	void UpdateDivebomb(float DeltaTime);
+
 	UFUNCTION()
 		void ResetDodge();
 
 	UFUNCTION()
 		void ResetDodgeTimer();
+
+	UFUNCTION()
+		void InitiateDivebomb();
+
+	UFUNCTION()
+		void EndDivebombLand();
 
 public:
 	UPROPERTY(BlueprintReadOnly, Category = AnimationHandling)
@@ -78,11 +90,29 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		UAnimMontage* HardLandingMontage = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		float SoftLandingUpperLimit = 500.f;
+	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
+		UAnimMontage* DivebombMontage = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
+		FName DivebombLandSectionName = "Land";
+
+	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
+		uint32 DivebombLineTraceToCheckFloorRatio = 8;
+
+	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
+		float BaseDivebombForce = 15000000.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
+		float DivebombInterpSpeed = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		float HardLandingLowerLimit = 1200.f;
+		float SoftLandingLimit = 600.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
+		float MediumLandingLimit = 1500.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
+		float HardLandingLimit = 2400.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightLocomotion)
 		float BaseSpeed = 850.f;
@@ -121,17 +151,35 @@ private:
 
 	FTimerHandle DodgeResetBufferTimerHandle;
 
+	FTimerHandle DivebombTimerHandle;
+
+	FTimerHandle DivebombLandTimerHandle;
+
 	FTimerDelegate DodgeTimerDelegate;
 
 	FTimerDelegate DodgeResetBufferTimerDelegate;
-	
+
+	FTimerDelegate DivebombTimerDelegate;
+
+	FTimerDelegate DivebombLandTimerDelegate;
+		
 	bool bWasDashing;
 
 	bool bIsDodging;
+
+	bool bInitiatedDivebomb;
+
+	bool bIsDivebombing;
 
 	float CapsuleHalfHeight;
 
 	float CurrentDodgeForce;
 
 	float LandingInitiationLocationZ;
+
+	float DivebombStartSectionLength;
+
+	float DivebombLandSectionLength;
+
+	float CurrentDivebombForce;
 };

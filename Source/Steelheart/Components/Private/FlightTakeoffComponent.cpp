@@ -22,16 +22,19 @@ void UFlightTakeoffComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	BaseBlendOutTime = TakeOffMontage->BlendOut.GetBlendTime();
+	if (ensure(TakeOffMontage != nullptr))
+	{
+		BaseBlendOutTime = TakeOffMontage->BlendOut.GetBlendTime();
 
-	int32 EngageSectionIndex = TakeOffMontage->GetSectionIndex("Default");
-	EngageSectionLength = TakeOffMontage->GetSectionLength(EngageSectionIndex);
+		int32 EngageSectionIndex = TakeOffMontage->GetSectionIndex("Default");
+		EngageSectionLength = TakeOffMontage->GetSectionLength(EngageSectionIndex);
 
-	int32 LoopSectionIndex = TakeOffMontage->GetSectionIndex(LoopSectionName);
-	LoopSectionLength = TakeOffMontage->GetSectionLength(LoopSectionIndex);
+		int32 LoopSectionIndex = TakeOffMontage->GetSectionIndex(LoopSectionName);
+		LoopSectionLength = TakeOffMontage->GetSectionLength(LoopSectionIndex);
 
-	int32 ReleaseSectionIndex = TakeOffMontage->GetSectionIndex(ReleaseSectionName);
-	ReleaseSectionLength = TakeOffMontage->GetSectionLength(ReleaseSectionIndex);
+		int32 ReleaseSectionIndex = TakeOffMontage->GetSectionIndex(ReleaseSectionName);
+		ReleaseSectionLength = TakeOffMontage->GetSectionLength(ReleaseSectionIndex);
+	}
 }
 
 // Called every frame
@@ -51,7 +54,8 @@ void UFlightTakeoffComponent::TickComponent(float DeltaTime, ELevelTick TickType
 
 void UFlightTakeoffComponent::EngageTakeOff()
 {
-	if (OwnerCharacter->GetCharacterMovement()->IsMovingOnGround() && !bIsTakeOffInitiating)
+	if (ensure(TakeOffMontage != nullptr) &&
+		OwnerCharacter->GetCharacterMovement()->IsMovingOnGround() && !bIsTakeOffInitiating)
 	{
 		bIsTakeOffInitiating = true;
 		FlightLocomotionInterface->SetLocomotionEnabled(false);
@@ -65,7 +69,7 @@ void UFlightTakeoffComponent::EngageTakeOff()
 
 void UFlightTakeoffComponent::ReleaseTakeOff()
 {
-	if (bIsTakeOffInitiating)
+	if (ensure(TakeOffMontage != nullptr) && bIsTakeOffInitiating)
 	{
 		bIsTakeOffInitiating = false;
 		float SectionLength;
@@ -99,28 +103,34 @@ void UFlightTakeoffComponent::ReleaseTakeOff()
 
 void UFlightTakeoffComponent::LoopTakeOff()
 {
-	if (bIsTakeOffLooping)
+	if (ensure(TakeOffMontage != nullptr))
 	{
-		bIsTakeOffCharged = true;
+		if (bIsTakeOffLooping)
+		{
+			bIsTakeOffCharged = true;
 
-		GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
-	}
-	else
-	{
-		bIsTakeOffLooping = true;
+			GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
+		}
+		else
+		{
+			bIsTakeOffLooping = true;
 
-		OwnerCharacter->PlayAnimMontage(TakeOffMontage, RATE_SCALE, LoopSectionName);
+			OwnerCharacter->PlayAnimMontage(TakeOffMontage, RATE_SCALE, LoopSectionName);
 		
-		GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
-		GetWorld()->GetTimerManager().SetTimer(TakeOffLoopTimerHandle, TakeOffLoopTimerDelegate, LoopSectionLength, false);;
+			GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
+			GetWorld()->GetTimerManager().SetTimer(TakeOffLoopTimerHandle, TakeOffLoopTimerDelegate, LoopSectionLength, false);;
+		}
 	}
 }
 
 void UFlightTakeoffComponent::EndTakeOff()
 {
-	bIsTakingOff = false;
-	FlightLocomotionInterface->SetLocomotionEnabled(true);
+	if (ensure(TakeOffMontage != nullptr))
+	{
+		bIsTakingOff = false;
+		FlightLocomotionInterface->SetLocomotionEnabled(true);
 
-	OwnerCharacter->StopAnimMontage();
-	GetWorld()->GetTimerManager().ClearTimer(TakeOffEndTimerHandle);
+		OwnerCharacter->StopAnimMontage();
+		GetWorld()->GetTimerManager().ClearTimer(TakeOffEndTimerHandle);
+	}
 }

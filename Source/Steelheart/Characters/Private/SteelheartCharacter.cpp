@@ -18,7 +18,7 @@
 ASteelheartCharacter::ASteelheartCharacter()
 {
 	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 90.0f);
+	GetCapsuleComponent()->InitCapsuleSize(40.f, 89.0f);
 
 	// set our turn rates for input
 	BaseTurnRate = 45.f;
