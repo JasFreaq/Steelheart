@@ -117,12 +117,7 @@ void ASteelheartCharacter::HandleFlyInput()
 		{
 			if (bIsDashing)
 			{
-				FlightLocomotion->StopDashing();
-				GetCharacterMovement()->MaxAcceleration = WalkDashAcceleration;
-			}
-			else
-			{
-				GetCharacterMovement()->MaxAcceleration = WalkBaseAcceleration;
+				StopDashing();
 			}
 
 			FlightLocomotion->StopFlying();

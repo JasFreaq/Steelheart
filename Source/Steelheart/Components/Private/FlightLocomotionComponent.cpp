@@ -9,7 +9,6 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Steelheart/Interfaces/Public/FlightLocomotionInterface.h"
-#include "DrawDebugHelpers.h"
 
 // Sets default values for this component's properties
 UFlightLocomotionComponent::UFlightLocomotionComponent()
@@ -194,11 +193,16 @@ void UFlightLocomotionComponent::UpdateFlightLocomotion(float DeltaTime)
 void UFlightLocomotionComponent::UpdateFlightRotation(float DeltaTime)
 {
 	FRotator CurrentRotation = CapsuleComponent->GetComponentRotation();
-
-	FRotator TargetRotation = CameraComponent->GetComponentRotation();
-	if (!FlightLocomotionInterface->IsDashing())
+	
+	FRotator TargetRotation;
+	if (FlightLocomotionInterface->IsDashing())
 	{
-		TargetRotation.Pitch = 0.f;
+		TargetRotation = CharacterMovement->Velocity.Rotation();
+	}
+	else
+	{
+		TargetRotation = CameraComponent->GetComponentRotation();
+		TargetRotation.Pitch = 0;
 	}
 
 	FRotator NewRotation = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, RotationInterpSpeed);
@@ -282,13 +286,16 @@ void UFlightLocomotionComponent::UpdateDivebomb(float DeltaTime)
 		TraceParams.AddIgnoredActor(OwnerCharacter);
 		TraceParams.bTraceComplex = true;
 		
-		if (GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic, TraceParams)
+		if (!bIsLandingDivebomb && GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic, TraceParams)
 			&& CharacterMovement->IsWalkable(Hit))
 		{			
 			if (ensure(DivebombMontage != nullptr))
 			{
 				OwnerCharacter->PlayAnimMontage(DivebombMontage, 1.f, DivebombLandSectionName);
-								
+				OwnerCharacter->DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+
+				bIsLandingDivebomb = true;
+
 				GetWorld()->GetTimerManager().SetTimer(DivebombLandTimerHandle, DivebombLandTimerDelegate, DivebombLandSectionLength, false);
 			}
 		}
@@ -323,6 +330,8 @@ void UFlightLocomotionComponent::EndDivebombLand()
 {
 	bIsDivebombing = false;
 	bInitiatedDivebomb = false;
+	bIsLandingDivebomb = false;
+
 	LandingInitiationLocationZ = 0.f;
 
 	OwnerCharacter->StopAnimMontage();

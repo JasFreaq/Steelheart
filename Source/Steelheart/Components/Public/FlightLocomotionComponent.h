@@ -171,6 +171,8 @@ private:
 
 	bool bIsDivebombing;
 
+	bool bIsLandingDivebomb;
+
 	float CapsuleHalfHeight;
 
 	float CurrentDodgeForce;
