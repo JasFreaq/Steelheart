@@ -8,6 +8,8 @@
 
 #define RATE_SCALE 1.f
 
+DECLARE_DELEGATE(FReleasedTakeoff);
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class STEELHEART_API UFlightTakeoffComponent : public UFlightComponent
 {
@@ -23,6 +25,8 @@ public:
 	void EngageTakeOff();
 
 	void ReleaseTakeOff();
+
+	FORCEINLINE FReleasedTakeoff* GetTakeoffReleaseDelegate() { return &OnReleaseTakeoff; }
 
 protected:
 	// Called when the game starts
@@ -54,6 +58,8 @@ private:
 	FTimerDelegate TakeOffLoopTimerDelegate;
 
 	FTimerDelegate TakeOffEndTimerDelegate;
+
+	FReleasedTakeoff OnReleaseTakeoff;
 
 	float BaseBlendOutTime;
 

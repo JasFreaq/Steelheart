@@ -26,11 +26,11 @@ ASteelheartCharacter::ASteelheartCharacter()
 
 	// Don't rotate when the controller rotates. Let that just affect the camera.
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = true;
+	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
 	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = false; // Character moves in the direction of input...	
+	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f); // ...at this rotation rate
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->AirControl = 0.2f;
@@ -39,7 +39,8 @@ ASteelheartCharacter::ASteelheartCharacter()
 	
 	RunSpeed = GetCharacterMovement()->MaxWalkSpeed;
 	BaseAcceleration = GetCharacterMovement()->GetMaxAcceleration();
-	
+	MaxSpeedTarget = RunSpeed;
+
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
@@ -57,7 +58,9 @@ ASteelheartCharacter::ASteelheartCharacter()
 	// are set in the derived blueprint asset (to avoid direct content references in C++)
 
 	FlightLocomotion = CreateDefaultSubobject<UFlightLocomotionComponent>(TEXT("FlightLocomotionComponent"));
+
 	FlightTakeoff = CreateDefaultSubobject<UFlightTakeoffComponent>(TEXT("FlightTakeoffComponent"));
+	FlightTakeoff->GetTakeoffReleaseDelegate()->BindUFunction(FlightLocomotion, "Fly");
 
 	bLocomotionEnabled = true;
 }
@@ -125,11 +128,17 @@ void ASteelheartCharacter::HandleFlyInput()
 				StopDashing();
 			}
 
+			bUseControllerRotationYaw = false;
+			GetCharacterMovement()->bOrientRotationToMovement = true;
+
 			FlightLocomotion->StopFlying();
 		}
 		else if (GetCharacterMovement()->IsFalling()) //Fly
 		{
 			Super::StopJumping();
+
+			bUseControllerRotationYaw = true;
+			GetCharacterMovement()->bOrientRotationToMovement = false;
 
 			FlightLocomotion->Fly();
 			if (bIsDashing)
@@ -321,7 +330,7 @@ void ASteelheartCharacter::Dash()
 		GetCharacterMovement()->MaxAcceleration = DashAcceleration;
 	}
 
-	GetCharacterMovement()->MaxWalkSpeed = DashSpeed;
+	MaxSpeedTarget = DashSpeed;
 
 	bProcessDashLerp = true;
 	if (bProcessStopDashLerp)
@@ -344,7 +353,7 @@ void ASteelheartCharacter::StopDashing()
 		GetCharacterMovement()->MaxAcceleration = BaseAcceleration;
 	}
 
-	GetCharacterMovement()->MaxWalkSpeed = RunSpeed;
+	MaxSpeedTarget = RunSpeed;
 
 	bProcessStopDashLerp = true;
 	if (bProcessDashLerp)
@@ -367,6 +376,17 @@ void ASteelheartCharacter::Landed(const FHitResult& Hit)
 void ASteelheartCharacter::OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal,
 	const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta)
 {
+	if (CurrentSpeed >= SpeedRequiredForLeap)
+	{
+		if (ensure(LeapStartMontage != nullptr))
+			PlayAnimMontage(LeapStartMontage);
+	}
+	else
+	{
+		if (ensure(JumpStartMontage != nullptr))
+			PlayAnimMontage(JumpStartMontage);
+	}
+
 	FlightLocomotion->SetLandingInitiationLocationZ(PreviousLocation.Z);
 }
 

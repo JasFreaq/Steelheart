@@ -41,9 +41,12 @@ void UFlightLocomotionComponent::BeginPlay()
 		int32 StartSectionIndex = DivebombMontage->GetSectionIndex("Default");
 		DivebombStartSectionLength = DivebombMontage->GetSectionLength(StartSectionIndex) / DIVEBOMB_RATE_SCALE;
 
-		int32 LandSectionIndex = DivebombMontage->GetSectionIndex(DivebombLandSectionName);
+		int32 LandSectionIndex = DivebombMontage->GetSectionIndex(DiveMontageLandSectionName);
 		DivebombLandSectionLength = DivebombMontage->GetSectionLength(LandSectionIndex) / DIVEBOMB_RATE_SCALE;
 	}
+
+	DivebombTraceParams.AddIgnoredActor(OwnerCharacter);
+	DivebombTraceParams.bTraceComplex = true;
 }
 
 // Called every frame
@@ -150,25 +153,12 @@ void UFlightLocomotionComponent::HandleCharacterLanding(const FHitResult& Hit)
 	{
 		float FallDistance = LandingInitiationLocationZ - OwnerCharacter->GetActorLocation().Z;
 
-		if (FallDistance <= HardLandingLimit)
+		if (FallDistance > SoftLandingLimit && !bInitiatedDivebomb)
 		{
 			OwnerCharacter->DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 
-			if (FallDistance <= SoftLandingLimit)
-			{
-				if (ensure(SoftLandingMontage != nullptr))
-					OwnerCharacter->PlayAnimMontage(SoftLandingMontage);
-			}
-			else if (FallDistance <= MediumLandingLimit)
-			{
-				if (ensure(MediumLandingMontage != nullptr))
-					OwnerCharacter->PlayAnimMontage(MediumLandingMontage);
-			}
-			else
-			{
-				if (ensure(HardLandingMontage != nullptr))
-					OwnerCharacter->PlayAnimMontage(HardLandingMontage);
-			}
+			if (ensure(HardLandingMontage != nullptr))
+				OwnerCharacter->PlayAnimMontage(HardLandingMontage);
 		}
 	}
 }
@@ -261,14 +251,21 @@ void UFlightLocomotionComponent::SmoothResetPitch(float DeltaTime)
 void UFlightLocomotionComponent::InitiateDivebombStart()
 {
 	float FallDistance = LandingInitiationLocationZ - OwnerCharacter->GetActorLocation().Z;
-	if (FallDistance > HardLandingLimit)
+	if (FallDistance > DiveEngageHeightBuffer)
 	{
-		if (ensure(DivebombMontage != nullptr))
-			OwnerCharacter->PlayAnimMontage(DivebombMontage);
-		
-		bInitiatedDivebomb = true;
+		FHitResult Hit;
+		FVector TraceStart = OwnerCharacter->GetActorLocation();
+		FVector TraceEnd = TraceStart - FVector::UpVector * DiveEngageHeightBuffer * DiveEngageFloorCheckTraceRatio;
 
-		GetWorld()->GetTimerManager().SetTimer(DivebombTimerHandle, DivebombTimerDelegate, DivebombStartSectionLength, false);
+		if (!GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic, DivebombTraceParams))
+		{
+			if (ensure(DivebombMontage != nullptr))
+				OwnerCharacter->PlayAnimMontage(DivebombMontage);
+		
+			bInitiatedDivebomb = true;
+
+			GetWorld()->GetTimerManager().SetTimer(DivebombTimerHandle, DivebombTimerDelegate, DivebombStartSectionLength, false);
+		}
 	}
 }
 
@@ -281,17 +278,13 @@ void UFlightLocomotionComponent::UpdateDivebomb(float DeltaTime)
 		
 		FHitResult Hit;
 		FVector TraceStart = OwnerCharacter->GetActorLocation();
-		FVector TraceEnd = TraceStart - FVector::UpVector * CapsuleHalfHeight * DivebombLineTraceToCheckFloorRatio;
-		FCollisionQueryParams TraceParams;
-		TraceParams.AddIgnoredActor(OwnerCharacter);
-		TraceParams.bTraceComplex = true;
-		
-		if (!bIsLandingDivebomb && GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic, TraceParams)
-			&& CharacterMovement->IsWalkable(Hit))
+		FVector TraceEnd = TraceStart - FVector::UpVector * CapsuleHalfHeight * DiveLandFloorCheckTraceRatio;
+				
+		if (!bIsLandingDivebomb && GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic, DivebombTraceParams))
 		{			
 			if (ensure(DivebombMontage != nullptr))
 			{
-				OwnerCharacter->PlayAnimMontage(DivebombMontage, 1.f, DivebombLandSectionName);
+				OwnerCharacter->PlayAnimMontage(DivebombMontage, 1.f, DiveMontageLandSectionName);
 				OwnerCharacter->DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 
 				bIsLandingDivebomb = true;
@@ -333,7 +326,6 @@ void UFlightLocomotionComponent::EndDivebombLand()
 	bIsLandingDivebomb = false;
 
 	LandingInitiationLocationZ = 0.f;
-
-	OwnerCharacter->StopAnimMontage();
+	
 	GetWorld()->GetTimerManager().ClearTimer(DivebombLandTimerHandle);
 }

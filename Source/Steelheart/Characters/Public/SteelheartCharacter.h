@@ -126,6 +126,12 @@ public:
 		bool bIsDashing;
 
 private:
+	UPROPERTY(EditDefaultsOnly, Category = JumpAnimations)
+		UAnimMontage* JumpStartMontage = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = JumpAnimations)
+		UAnimMontage* LeapStartMontage = nullptr;
+
 	UPROPERTY(EditDefaultsOnly, Category = Walking)
 		float WalkSpeed = 150.f;
 

@@ -81,7 +81,7 @@ void UFlightTakeoffComponent::ReleaseTakeOff()
 
 			bIsTakingOff = true;
 			OwnerCharacter->PlayAnimMontage(TakeOffMontage, RATE_SCALE, ReleaseSectionName);
-			CharacterMovement->SetMovementMode(MOVE_Flying);
+			OnReleaseTakeoff.ExecuteIfBound();
 
 			ReleaseTimeCounter = 0.f;
 			CurrentTakeOffForce = BaseTakeOffForce;
