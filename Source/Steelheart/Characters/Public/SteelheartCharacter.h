@@ -4,10 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Steelheart/Interfaces/Public/FlightLocomotionInterface.h"
 #include "SteelheartCharacter.generated.h"
 
+class UFlightLocomotionComponent;
+class UFlightTakeoffComponent;
+
 UCLASS(config = Game)
-class ASteelheartCharacter : public ACharacter
+class ASteelheartCharacter : public ACharacter, public IFlightLocomotionInterface
 {
 	GENERATED_BODY()
 
@@ -17,22 +21,25 @@ class ASteelheartCharacter : public ACharacter
 
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-		class UCameraComponent* FollowCamera;
-	
+		UCameraComponent* FollowCamera;
+
+	/** Flight locomotion */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
+		UFlightLocomotionComponent* FlightLocomotion;
+
+	/** Flight takeoff */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
+		UFlightTakeoffComponent* FlightTakeoff;
+
 public:
 	ASteelheartCharacter();
+		
+	FORCEINLINE virtual UCameraComponent* GetCameraComponent() override { return FollowCamera; }
 
-	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
-		float BaseTurnRate;
+	FORCEINLINE virtual bool IsDashing() override { return bIsDashing; }
 
-	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
-		float BaseLookUpRate;
+	FORCEINLINE virtual void SetLocomotionEnabled(bool Enabled) override { bLocomotionEnabled = Enabled; }
 
-	UPROPERTY(BlueprintReadOnly, Category = Locomotion)
-		bool bIsDashing;
-	
 protected:
 	virtual void Tick(float DeltaSeconds) override;
 
@@ -43,7 +50,7 @@ protected:
 	void HandleFlyInput();
 	
 	void HandleDashInput();
-		
+			
 	/** Called for forwards/backwards input */
 	void MoveForward(float Value);
 
@@ -52,7 +59,7 @@ protected:
 
 	/** Called for upwards/downwards input */
 	void MoveUp(float Value);
-
+	
 	/** 
 	 * Called via input to turn at a given rate. 
 	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
@@ -66,14 +73,12 @@ protected:
 	void LookUpAtRate(float Rate);
 
 private:
-	void Fly();
-
-	void StopFlying();
-
 	virtual void Landed(const FHitResult& Hit) override;
 
 	virtual void OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta) override;
-	
+
+	virtual void NotifyJumpApex() override;
+
 	void Dash();
 
 	void StopDashing();
@@ -81,59 +86,37 @@ private:
 	void ProcessDashLerp(float DeltaSeconds);
 
 	void InverseDashLerp();
-
+	
 	bool CheckAngleBetweenVelocityAndRightVector();
 
 public:
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
+		float BaseTurnRate;
+
+	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
+		float BaseLookUpRate;
+
+	UPROPERTY(BlueprintReadOnly, Category = Locomotion)
+		bool bIsDashing;
 
 private:
-	UPROPERTY(EditDefaultsOnly, Category = BasicFlight)
-		float RemnantFallVelocityCoeffOnFly = 0.4f;
-
-	UPROPERTY(EditDefaultsOnly, Category = BasicFlight)
-		float RemnantFallVelocityCap = 700.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		UAnimMontage* SoftLandingMontage = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		UAnimMontage* MediumLandingMontage = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		UAnimMontage* HardLandingMontage = nullptr;
-	
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		float SoftLandingUpperLimit = 500.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		float HardLandingLowerLimit = 1200.f;
-
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float WalkDashSpeed = 3000.f;
-
+		
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
-		float FlyDashSpeed = 3000.f;
-	
-	UPROPERTY(EditDefaultsOnly, Category = Dashing)
-		float DashAcceleration = 50000.f;
+		float WalkDashAcceleration = 50000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float DashLerpTime = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float CameraBoomDashLength = 600.f;
-	
-	float LandingInitiationLocationZ;
-		
-	float WalkBaseSpeed;
 
-	float FlyBaseSpeed;
-	
-	float BaseAcceleration;
+	float WalkBaseSpeed;
+		
+	float WalkBaseAcceleration;
 
 	float CameraBoomBaseLength;
 
@@ -144,4 +127,6 @@ private:
 	bool bProcessDashLerp;
 
 	bool bProcessStopDashLerp;
+
+	bool bLocomotionEnabled;
 };
