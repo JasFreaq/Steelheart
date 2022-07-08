@@ -180,7 +180,7 @@ void UFlightLocomotionComponent::SetLandingInitiationLocationZ(float Value)
 
 void UFlightLocomotionComponent::UpdateFlightLocomotion(float DeltaTime)
 {
-	UpdateFlightRotation(DeltaTime);
+	UpdateRotation(DeltaTime);
 
 	UpdateBlendRates();
 
@@ -190,7 +190,7 @@ void UFlightLocomotionComponent::UpdateFlightLocomotion(float DeltaTime)
 	}
 }
 
-void UFlightLocomotionComponent::UpdateFlightRotation(float DeltaTime)
+void UFlightLocomotionComponent::UpdateRotation(float DeltaTime)
 {
 	FRotator CurrentRotation = CapsuleComponent->GetComponentRotation();
 	

@@ -73,16 +73,28 @@ protected:
 	void LookUpAtRate(float Rate);
 
 private:
-	virtual void Landed(const FHitResult& Hit) override;
+	void UpdateLocomotion(float DeltaSeconds);
 
-	virtual void OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta) override;
+	void UpdateBlendRate();
 
-	virtual void NotifyJumpApex() override;
+	void RecordStoppingSpeed();
+
+	void UpdateSpeeds(float DeltaSeconds);
+
+	void Walk();
+
+	void StopWalking();
 
 	void Dash();
 
 	void StopDashing();
 
+	virtual void Landed(const FHitResult& Hit) override;
+
+	virtual void OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta) override;
+
+	virtual void NotifyJumpApex() override;
+		
 	void ProcessDashLerp(float DeltaSeconds);
 
 	void InverseDashLerp();
@@ -98,31 +110,53 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
 		float BaseLookUpRate;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Leaping)
+		float SpeedRequiredForLeap = 2500.f;
+
+	UPROPERTY(BlueprintReadOnly, Category = Locomotion)
+		float CurrentRotationRate;
+
+	UPROPERTY(BlueprintReadOnly, Category = Locomotion)
+		float CurrentSpeed;
+
+	UPROPERTY(BlueprintReadOnly, Category = Locomotion)
+		float SpeedWhenStopping;
+	
 	UPROPERTY(BlueprintReadOnly, Category = Locomotion)
 		bool bIsDashing;
 
 private:
+	UPROPERTY(EditDefaultsOnly, Category = Walking)
+		float WalkSpeed = 150.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = LocomotionRatios)
+		float MaxGroundSpeedInterpSpeed = 4.f;
+
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
-		float WalkDashSpeed = 3000.f;
+		float DashSpeed = 3000.f;
 		
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
-		float WalkDashAcceleration = 50000.f;
+		float DashAcceleration = 50000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float DashLerpTime = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float CameraBoomDashLength = 600.f;
-
-	float WalkBaseSpeed;
 		
-	float WalkBaseAcceleration;
+	float MaxSpeedTarget;
+
+	float RunSpeed;
+		
+	float BaseAcceleration;
 
 	float CameraBoomBaseLength;
 
 	float DashLerpTimeCounter = 0.f;
 
 	float DashLerpAlpha = 0.f;
+
+	bool bRecordedStoppingSpeed;
 
 	bool bProcessDashLerp;
 

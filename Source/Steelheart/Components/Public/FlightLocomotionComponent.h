@@ -43,7 +43,7 @@ protected:
 private:
 	void UpdateFlightLocomotion(float DeltaTime);
 
-	void UpdateFlightRotation(float DeltaTime);
+	void UpdateRotation(float DeltaTime);
 
 	void UpdateBlendRates();
 
