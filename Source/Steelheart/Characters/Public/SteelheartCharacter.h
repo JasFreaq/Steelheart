@@ -139,6 +139,9 @@ private:
 		float MaxGroundSpeedInterpSpeed = 4.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
+		float DashJumpZVelocity = 1200.f;
+	
+	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float DashSpeed = 3000.f;
 		
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
@@ -155,6 +158,8 @@ private:
 	float RunSpeed;
 		
 	float BaseAcceleration;
+	
+	float BaseJumpZVelocity;
 
 	float CameraBoomBaseLength;
 

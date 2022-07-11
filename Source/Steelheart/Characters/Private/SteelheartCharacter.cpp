@@ -39,6 +39,7 @@ ASteelheartCharacter::ASteelheartCharacter()
 	
 	RunSpeed = GetCharacterMovement()->MaxWalkSpeed;
 	BaseAcceleration = GetCharacterMovement()->GetMaxAcceleration();
+	BaseJumpZVelocity = GetCharacterMovement()->JumpZVelocity;
 	MaxSpeedTarget = RunSpeed;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
@@ -331,6 +332,7 @@ void ASteelheartCharacter::Dash()
 	}
 
 	MaxSpeedTarget = DashSpeed;
+	GetCharacterMovement()->JumpZVelocity = DashJumpZVelocity;
 
 	bProcessDashLerp = true;
 	if (bProcessStopDashLerp)
@@ -354,6 +356,7 @@ void ASteelheartCharacter::StopDashing()
 	}
 
 	MaxSpeedTarget = RunSpeed;
+	GetCharacterMovement()->JumpZVelocity = BaseJumpZVelocity;
 
 	bProcessStopDashLerp = true;
 	if (bProcessDashLerp)
