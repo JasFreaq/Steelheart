@@ -20,7 +20,8 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void Fly();
+	UFUNCTION()
+		void Fly();
 
 	void StopFlying();
 
@@ -43,7 +44,7 @@ protected:
 private:
 	void UpdateFlightLocomotion(float DeltaTime);
 
-	void UpdateFlightRotation(float DeltaTime);
+	void UpdateRotation(float DeltaTime);
 
 	void UpdateBlendRates();
 
@@ -82,38 +83,32 @@ public:
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		UAnimMontage* SoftLandingMontage = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		UAnimMontage* MediumLandingMontage = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		UAnimMontage* HardLandingMontage = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
 		UAnimMontage* DivebombMontage = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
-		FName DivebombLandSectionName = "Land";
+		FName DiveMontageLandSectionName = "Land";
 
 	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
-		uint32 DivebombLineTraceToCheckFloorRatio = 8;
+		float DiveEngageHeightBuffer = 2400.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
-		float BaseDivebombForce = 15000000.f;
+		float DiveEngageFloorCheckTraceRatio = 1.5f;
+
+	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
+		float DiveLandFloorCheckTraceRatio = 20.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
+		float BaseDivebombForce = 350000000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
 		float DivebombInterpSpeed = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		float SoftLandingLimit = 600.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		float MediumLandingLimit = 1500.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
-		float HardLandingLimit = 2400.f;
-
+		float SoftLandingLimit = 1500.f;
+	
 	UPROPERTY(EditDefaultsOnly, Category = FlightLocomotion)
 		float BaseSpeed = 850.f;
 
@@ -162,7 +157,9 @@ private:
 	FTimerDelegate DivebombTimerDelegate;
 
 	FTimerDelegate DivebombLandTimerDelegate;
-		
+
+	FCollisionQueryParams DivebombTraceParams;
+
 	bool bWasDashing;
 
 	bool bIsDodging;
