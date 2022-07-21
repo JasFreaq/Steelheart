@@ -8,6 +8,9 @@
 
 #define DIVEBOMB_RATE_SCALE 2.f
 
+DECLARE_DELEGATE(FInitiatedDivebomb);
+DECLARE_DELEGATE_OneParam(FEndDivebombLand, FVector);
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class STEELHEART_API UFlightLocomotionComponent : public UFlightComponent
 {
@@ -36,6 +39,10 @@ public:
 	void HandleCharacterLanding(const FHitResult& Hit);
 
 	void SetLandingInitiationLocationZ(float Value);
+
+	FORCEINLINE FInitiatedDivebomb* GetDivebombInitiateDelegate() { return &OnInitiateDivebomb; }
+
+	FORCEINLINE FEndDivebombLand* GetDivebombLandEndDelegate() { return &OnDivebombLandEnd; }
 
 protected:
 	// Called when the game starts
@@ -101,11 +108,8 @@ private:
 		float DiveLandFloorCheckTraceRatio = 20.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
-		float BaseDivebombForce = 350000000.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = Divebomb)
-		float DivebombInterpSpeed = 1.f;
-
+		float DivebombVelocity = 65000.f;
+	
 	UPROPERTY(EditDefaultsOnly, Category = FlightLanding)
 		float SoftLandingLimit = 1500.f;
 	
@@ -160,6 +164,10 @@ private:
 
 	FCollisionQueryParams DivebombTraceParams;
 
+	FInitiatedDivebomb OnInitiateDivebomb;
+
+	FEndDivebombLand OnDivebombLandEnd;
+
 	bool bWasDashing;
 
 	bool bIsDodging;
@@ -179,6 +187,4 @@ private:
 	float DivebombStartSectionLength;
 
 	float DivebombLandSectionLength;
-
-	float CurrentDivebombForce;
 };

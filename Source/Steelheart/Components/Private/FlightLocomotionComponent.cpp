@@ -62,7 +62,10 @@ void UFlightLocomotionComponent::TickComponent(float DeltaTime, ELevelTick TickT
 	{
 		if (bInitiatedDivebomb)
 		{
-			UpdateDivebomb(DeltaTime);
+			if (bIsDivebombing)
+			{
+				UpdateDivebomb(DeltaTime);
+			}
 		}
 		else
 		{
@@ -259,11 +262,11 @@ void UFlightLocomotionComponent::InitiateDivebombStart()
 
 		if (!GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic, DivebombTraceParams))
 		{
-			if (ensure(DivebombMontage != nullptr))
-				OwnerCharacter->PlayAnimMontage(DivebombMontage);
-		
 			bInitiatedDivebomb = true;
 
+			if (ensure(DivebombMontage != nullptr))
+				OwnerCharacter->PlayAnimMontage(DivebombMontage);
+			
 			GetWorld()->GetTimerManager().SetTimer(DivebombTimerHandle, DivebombTimerDelegate, DivebombStartSectionLength, false);
 		}
 	}
@@ -271,26 +274,24 @@ void UFlightLocomotionComponent::InitiateDivebombStart()
 
 void UFlightLocomotionComponent::UpdateDivebomb(float DeltaTime)
 {
-	if (bIsDivebombing)
-	{
-		CharacterMovement->AddForce(-FVector::UpVector * CurrentDivebombForce);
-		CurrentDivebombForce = FMath::FInterpTo(CurrentDivebombForce, 0.f, DeltaTime, DivebombInterpSpeed);
-		
-		FHitResult Hit;
-		FVector TraceStart = OwnerCharacter->GetActorLocation();
-		FVector TraceEnd = TraceStart - FVector::UpVector * CapsuleHalfHeight * DiveLandFloorCheckTraceRatio;
-				
-		if (!bIsLandingDivebomb && GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic, DivebombTraceParams))
-		{			
-			if (ensure(DivebombMontage != nullptr))
-			{
-				OwnerCharacter->PlayAnimMontage(DivebombMontage, 1.f, DiveMontageLandSectionName);
-				OwnerCharacter->DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	FHitResult Hit;
+	FVector TraceStart = OwnerCharacter->GetActorLocation();
+	FVector TraceEnd = TraceStart - FVector::UpVector * CapsuleHalfHeight * DiveLandFloorCheckTraceRatio;
 
-				bIsLandingDivebomb = true;
+	CharacterMovement->Velocity = -FVector::UpVector * DivebombVelocity;
 
-				GetWorld()->GetTimerManager().SetTimer(DivebombLandTimerHandle, DivebombLandTimerDelegate, DivebombLandSectionLength, false);
-			}
+	if (!bIsLandingDivebomb && GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic, DivebombTraceParams))
+	{			
+		if (ensure(DivebombMontage != nullptr))
+		{
+			OwnerCharacter->PlayAnimMontage(DivebombMontage, 1.f, DiveMontageLandSectionName);
+			OwnerCharacter->DisableInput(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+
+			OnDivebombLandEnd.ExecuteIfBound(Hit.Location);
+
+			bIsLandingDivebomb = true;
+
+			GetWorld()->GetTimerManager().SetTimer(DivebombLandTimerHandle, DivebombLandTimerDelegate, DivebombLandSectionLength, false);
 		}
 	}
 }
@@ -315,7 +316,9 @@ void UFlightLocomotionComponent::InitiateDivebomb()
 {
 	bIsDivebombing = true;
 
-	CurrentDivebombForce = BaseDivebombForce;
+	FlightLocomotionInterface->SetLocomotionEnabled(false);
+	OnInitiateDivebomb.ExecuteIfBound();
+
 	GetWorld()->GetTimerManager().ClearTimer(DivebombTimerHandle);
 }
 
@@ -326,6 +329,8 @@ void UFlightLocomotionComponent::EndDivebombLand()
 	bIsLandingDivebomb = false;
 
 	LandingInitiationLocationZ = 0.f;
+	CharacterMovement->Velocity = FVector::ZeroVector;
+	FlightLocomotionInterface->SetLocomotionEnabled(true);
 	
 	GetWorld()->GetTimerManager().ClearTimer(DivebombLandTimerHandle);
 }

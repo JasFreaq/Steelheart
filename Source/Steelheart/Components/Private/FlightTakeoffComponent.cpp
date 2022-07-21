@@ -78,8 +78,8 @@ void UFlightTakeoffComponent::ReleaseTakeOff()
 		{
 			bIsTakeOffLooping = false;
 			bIsTakeOffCharged = false;
-
 			bIsTakingOff = true;
+
 			OwnerCharacter->PlayAnimMontage(TakeOffMontage, RATE_SCALE, ReleaseSectionName);
 			OnReleaseTakeoff.ExecuteIfBound();
 

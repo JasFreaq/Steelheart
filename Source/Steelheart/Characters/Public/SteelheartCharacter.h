@@ -7,8 +7,7 @@
 #include "Steelheart/Interfaces/Public/FlightLocomotionInterface.h"
 #include "SteelheartCharacter.generated.h"
 
-class UFlightLocomotionComponent;
-class UFlightTakeoffComponent;
+class UNiagaraComponent;
 
 UCLASS(config = Game)
 class ASteelheartCharacter : public ACharacter, public IFlightLocomotionInterface
@@ -25,11 +24,24 @@ class ASteelheartCharacter : public ACharacter, public IFlightLocomotionInterfac
 
 	/** Flight locomotion */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
-		UFlightLocomotionComponent* FlightLocomotion;
+		class UFlightLocomotionComponent* FlightLocomotion;
 
 	/** Flight takeoff */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
-		UFlightTakeoffComponent* FlightTakeoff;
+		class UFlightTakeoffComponent* FlightTakeoff;
+
+	/** Flight effects */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
+		class UFlightEffectsComponent* FlightEffects;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DashEffects, meta = (AllowPrivateAccess = "true"))
+		UParticleSystemComponent* SonicBoomParticles;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DiveEffects, meta = (AllowPrivateAccess = "true"))
+		UParticleSystemComponent* DiveTrailParticles;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DashEffects, meta = (AllowPrivateAccess = "true"))
+		UNiagaraComponent* DashTrailNiagara;
 
 public:
 	ASteelheartCharacter();
@@ -50,7 +62,9 @@ protected:
 	void HandleFlyInput();
 	
 	void HandleDashInput();
-			
+
+	void HandleTakeoffEngageInput();
+
 	/** Called for forwards/backwards input */
 	void MoveForward(float Value);
 
@@ -73,6 +87,8 @@ protected:
 	void LookUpAtRate(float Rate);
 
 private:
+	void InitializeEffects();
+
 	void UpdateLocomotion(float DeltaSeconds);
 
 	void UpdateBlendRate();
@@ -98,8 +114,6 @@ private:
 	void ProcessDashLerp(float DeltaSeconds);
 
 	void InverseDashLerp();
-	
-	bool CheckAngleBetweenVelocityAndRightVector();
 
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
@@ -151,7 +165,7 @@ private:
 		float DashLerpTime = 1.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
-		float CameraBoomDashLength = 600.f;
+		float CameraBoomDashLength = 900.f;
 		
 	float MaxSpeedTarget;
 
@@ -166,6 +180,12 @@ private:
 	float DashLerpTimeCounter = 0.f;
 
 	float DashLerpAlpha = 0.f;
+
+	float ForwardInput;
+
+	float RightInput;
+
+	float UpInput;
 
 	bool bRecordedStoppingSpeed;
 

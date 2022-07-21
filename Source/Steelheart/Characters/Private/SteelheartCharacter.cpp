@@ -9,8 +9,12 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "Steelheart/Components/Public/FlightLocomotionComponent.h"
 #include "Steelheart/Components/Public/FlightTakeoffComponent.h"
+#include "Steelheart/Components/Public/FlightEffectsComponent.h"
+
 
 //////////////////////////////////////////////////////////////////////////
 // ASteelheartCharacter
@@ -45,7 +49,7 @@ ASteelheartCharacter::ASteelheartCharacter()
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
+	CameraBoom->TargetArmLength = 450.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
 
 	CameraBoomBaseLength = CameraBoom->TargetArmLength;
@@ -58,10 +62,16 @@ ASteelheartCharacter::ASteelheartCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset (to avoid direct content references in C++)
 
+	FlightEffects = CreateDefaultSubobject<UFlightEffectsComponent>(TEXT("FlightEffectsComponent"));
+
 	FlightLocomotion = CreateDefaultSubobject<UFlightLocomotionComponent>(TEXT("FlightLocomotionComponent"));
+	FlightLocomotion->GetDivebombInitiateDelegate()->BindUFunction(FlightEffects, "ActivateDiveTrail");
+	FlightLocomotion->GetDivebombLandEndDelegate()->BindUFunction(FlightEffects, "ActivateDiveLand");
 
 	FlightTakeoff = CreateDefaultSubobject<UFlightTakeoffComponent>(TEXT("FlightTakeoffComponent"));
 	FlightTakeoff->GetTakeoffReleaseDelegate()->BindUFunction(FlightLocomotion, "Fly");
+		
+	InitializeEffects();
 
 	bLocomotionEnabled = true;
 }
@@ -75,11 +85,26 @@ void ASteelheartCharacter::Tick(float DeltaSeconds)
 
 	UpdateLocomotion(DeltaSeconds);
 
-	if (bProcessDashLerp && CheckAngleBetweenVelocityAndRightVector())
+	bool NoInput = FMath::IsNearlyZero(ForwardInput) && FMath::IsNearlyZero(RightInput)
+		&& FMath::IsNearlyZero(UpInput);
+	if (bIsDashing)
 	{
-		StopDashing();
+		if (GetCharacterMovement()->IsFlying())
+		{
+			if (FMath::IsNearlyZero(ForwardInput) || ForwardInput < 0.f)
+			{
+				StopDashing();
+			}
+		}
+		else
+		{
+			if (FMath::IsNearlyZero(ForwardInput) && FMath::IsNearlyZero(RightInput))
+			{
+				StopDashing();
+			}
+		}
 	}
-
+	
 	if (bProcessDashLerp || bProcessStopDashLerp)
 	{
 		ProcessDashLerp(DeltaSeconds);
@@ -99,8 +124,8 @@ void ASteelheartCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 
 	PlayerInputComponent->BindAction("Dash", IE_Pressed, this, &ASteelheartCharacter::HandleDashInput);
 
-	PlayerInputComponent->BindAction("TakeOff", IE_Pressed, FlightTakeoff , &UFlightTakeoffComponent::EngageTakeOff);
-	PlayerInputComponent->BindAction("TakeOff", IE_Released, FlightTakeoff , &UFlightTakeoffComponent::ReleaseTakeOff);
+	PlayerInputComponent->BindAction("TakeOff", IE_Pressed, this, &ASteelheartCharacter::HandleTakeoffEngageInput);
+	PlayerInputComponent->BindAction("TakeOff", IE_Released, FlightTakeoff, &UFlightTakeoffComponent::ReleaseTakeOff);
 
 	PlayerInputComponent->BindAction("Walk", IE_Pressed, this, &ASteelheartCharacter::Walk);
 	PlayerInputComponent->BindAction("Walk", IE_Released, this, &ASteelheartCharacter::StopWalking);
@@ -133,6 +158,7 @@ void ASteelheartCharacter::HandleFlyInput()
 			GetCharacterMovement()->bOrientRotationToMovement = true;
 
 			FlightLocomotion->StopFlying();
+			GetCharacterMovement()->bNotifyApex = true;
 		}
 		else if (GetCharacterMovement()->IsFalling()) //Fly
 		{
@@ -165,8 +191,27 @@ void ASteelheartCharacter::HandleDashInput()
 		}
 		else
 		{
-			Dash();		
+			if (GetCharacterMovement()->IsFlying())
+			{
+				if (ForwardInput > 0.f)
+				{
+					Dash();
+				}
+			}
+			else if (GetCharacterMovement()->IsWalking() &&
+				!(FMath::IsNearlyZero(FMath::Abs(ForwardInput)) && FMath::IsNearlyZero(RightInput)))
+			{
+				Dash();
+			}
 		}
+	}
+}
+
+void ASteelheartCharacter::HandleTakeoffEngageInput()
+{
+	if (FMath::IsNearlyZero(ForwardInput) && FMath::IsNearlyZero(RightInput))
+	{
+		FlightTakeoff->EngageTakeOff();
 	}
 }
 
@@ -196,12 +241,9 @@ void ASteelheartCharacter::MoveForward(float Value)
 
 			AddMovementInput(Direction, Value);
 		}
-
-		if (bIsDashing && Value <= 0.8f)
-		{
-			StopDashing();
-		}
 	}
+
+	ForwardInput = Value;
 }
 
 void ASteelheartCharacter::MoveRight(float Value)
@@ -237,6 +279,8 @@ void ASteelheartCharacter::MoveRight(float Value)
 			}
 		}
 	}
+
+	RightInput = FMath::Abs(Value);
 }
 
 void ASteelheartCharacter::MoveUp(float Value)
@@ -249,6 +293,8 @@ void ASteelheartCharacter::MoveUp(float Value)
 			AddMovementInput(FVector::UpVector, Value);
 		}
 	}
+
+	UpInput = FMath::Abs(Value);
 }
 
 void ASteelheartCharacter::TurnAtRate(float Rate)
@@ -261,6 +307,24 @@ void ASteelheartCharacter::LookUpAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+}
+
+void ASteelheartCharacter::InitializeEffects()
+{
+	SonicBoomParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("SonicBoomParticles"));
+	SonicBoomParticles->SetAutoActivate(false);
+	SonicBoomParticles->SetupAttachment(GetMesh());
+	FlightEffects->SetSonicBoom(SonicBoomParticles);
+
+	DiveTrailParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("DiveTrailParticles"));
+	DiveTrailParticles->SetAutoActivate(false);
+	DiveTrailParticles->SetupAttachment(GetMesh());
+	FlightEffects->SetDiveTrail(DiveTrailParticles);
+	
+	DashTrailNiagara = CreateDefaultSubobject<UNiagaraComponent>(TEXT("DashTrailNiagara"));
+	DashTrailNiagara->SetAutoActivate(false);
+	DashTrailNiagara->SetupAttachment(GetMesh());
+	FlightEffects->SetDashTrail(DashTrailNiagara);
 }
 
 void ASteelheartCharacter::UpdateLocomotion(float DeltaSeconds)
@@ -321,6 +385,8 @@ void ASteelheartCharacter::StopWalking()
 void ASteelheartCharacter::Dash()
 {
 	bIsDashing = true;
+	FlightEffects->ActivateSonicBoom();
+	FlightEffects->ToggleDashTrail(true);
 
 	if (GetCharacterMovement()->IsFlying())
 	{
@@ -345,6 +411,7 @@ void ASteelheartCharacter::Dash()
 void ASteelheartCharacter::StopDashing()
 {
 	bIsDashing = false;
+	FlightEffects->ToggleDashTrail(false);
 
 	if (GetCharacterMovement()->IsFlying())
 	{
@@ -439,22 +506,4 @@ void ASteelheartCharacter::InverseDashLerp()
 {
 	DashLerpTimeCounter = DashLerpTime - DashLerpTimeCounter;
 	DashLerpAlpha = 1.f - DashLerpAlpha;
-}
-
-//////////////////////////////////////////////////////////////////////////
-// State Checks
-
-bool ASteelheartCharacter::CheckAngleBetweenVelocityAndRightVector()
-{
-	FVector Velocity = GetCharacterMovement()->Velocity;
-
-	float DotProduct = FVector::DotProduct(Velocity, GetActorRightVector());
-	float Theta = FMath::Acos(DotProduct / Velocity.Size());
-	bool IsValid = FMath::RadiansToDegrees(Theta) < 45.f;
-
-	DotProduct = FVector::DotProduct(Velocity, -GetActorRightVector());
-	Theta = FMath::Acos(DotProduct / Velocity.Size());
-	IsValid = IsValid || FMath::RadiansToDegrees(Theta) < 45.f;
-
-	return IsValid;
 }
