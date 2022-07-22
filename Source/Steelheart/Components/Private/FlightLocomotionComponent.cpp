@@ -150,7 +150,7 @@ void UFlightLocomotionComponent::LeftDodge()
 	}
 }
 
-void UFlightLocomotionComponent::HandleCharacterLanding(const FHitResult& Hit)
+bool UFlightLocomotionComponent::HandleCharacterLanding(const FHitResult& Hit)
 {
 	if (CharacterMovement->IsWalkable(Hit))
 	{
@@ -162,13 +162,25 @@ void UFlightLocomotionComponent::HandleCharacterLanding(const FHitResult& Hit)
 
 			if (ensure(HardLandingMontage != nullptr))
 				OwnerCharacter->PlayAnimMontage(HardLandingMontage);
+
+			return true;
 		}
 	}
+
+	return false;
 }
 
 void UFlightLocomotionComponent::SetLandingInitiationLocationZ(float Value)
 {
 	LandingInitiationLocationZ = Value;
+}
+
+void UFlightLocomotionComponent::StopDivebomb()
+{
+	bInitiatedDivebomb = false;
+	OwnerCharacter->StopAnimMontage(DivebombMontage);
+
+	GetWorld()->GetTimerManager().ClearTimer(DivebombTimerHandle);
 }
 
 void UFlightLocomotionComponent::UpdateFlightLocomotion(float DeltaTime)

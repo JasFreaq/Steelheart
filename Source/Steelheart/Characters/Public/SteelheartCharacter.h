@@ -39,9 +39,15 @@ class ASteelheartCharacter : public ACharacter, public IFlightLocomotionInterfac
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DiveEffects, meta = (AllowPrivateAccess = "true"))
 		UParticleSystemComponent* DiveTrailParticles;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = TakeoffEffects, meta = (AllowPrivateAccess = "true"))
+		UParticleSystemComponent* TakeoffChargeParticles;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DashEffects, meta = (AllowPrivateAccess = "true"))
 		UNiagaraComponent* DashTrailNiagara;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = SoundEffects, meta = (AllowPrivateAccess = "true"))
+		UAudioComponent* WindAudio;
 
 public:
 	ASteelheartCharacter();
@@ -110,10 +116,23 @@ private:
 	virtual void OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta) override;
 
 	virtual void NotifyJumpApex() override;
-		
-	void ProcessDashLerp(float DeltaSeconds);
 
-	void InverseDashLerp();
+	UFUNCTION()
+		void Dive();
+
+	UFUNCTION()
+		void LandDive(FVector LandLocation);
+
+	UFUNCTION()
+		void ReleaseTakeoff(bool Activate);
+
+	void StartCameraBoomLerp();
+
+	void StopCameraBoomLerp();
+
+	void ProcessCameraBoomLerp(float DeltaSeconds);
+
+	void InverseCameraBoomLerp();
 
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
@@ -161,12 +180,17 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float DashAcceleration = 50000.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = Dashing)
+	UPROPERTY(EditDefaultsOnly, Category = CameraBoomLerp)
 		float DashLerpTime = 1.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = Dashing)
-		float CameraBoomDashLength = 900.f;
-		
+	UPROPERTY(EditDefaultsOnly, Category = CameraBoomLerp)
+		float DiveLerpTime = 0.4f;
+
+	UPROPERTY(EditDefaultsOnly, Category = CameraBoomLerp)
+		float CameraBoomTargetLength = 900.f;
+
+	FVector FrameInputs;
+
 	float MaxSpeedTarget;
 
 	float RunSpeed;
@@ -177,16 +201,12 @@ private:
 
 	float CameraBoomBaseLength;
 
-	float DashLerpTimeCounter = 0.f;
+	float CameraBoomLerpTime;
 
-	float DashLerpAlpha = 0.f;
+	float CameraBoomLerpTimeCounter = 0.f;
 
-	float ForwardInput;
-
-	float RightInput;
-
-	float UpInput;
-
+	float CameraBoomLerpAlpha = 0.f;
+		
 	bool bRecordedStoppingSpeed;
 
 	bool bProcessDashLerp;

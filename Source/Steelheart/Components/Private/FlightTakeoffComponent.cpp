@@ -81,7 +81,7 @@ void UFlightTakeoffComponent::ReleaseTakeOff()
 			bIsTakingOff = true;
 
 			OwnerCharacter->PlayAnimMontage(TakeOffMontage, RATE_SCALE, ReleaseSectionName);
-			OnReleaseTakeoff.ExecuteIfBound();
+			OnReleaseTakeoff.ExecuteIfBound(true);
 
 			ReleaseTimeCounter = 0.f;
 			CurrentTakeOffForce = BaseTakeOffForce;
@@ -92,6 +92,7 @@ void UFlightTakeoffComponent::ReleaseTakeOff()
 		{
 			TakeOffMontage->BlendOut.SetBlendTime(EngageSectionLength / 2);
 			OwnerCharacter->StopAnimMontage(TakeOffMontage);
+			OnReleaseTakeoff.ExecuteIfBound(false);
 
 			SectionLength = EngageSectionLength / 2;
 			GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);

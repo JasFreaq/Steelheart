@@ -17,8 +17,14 @@ class STEELHEART_API UFlightEffectsComponent : public UFlightComponent
 	UParticleSystemComponent* SonicBoomParticles;
 
 	UParticleSystemComponent* DiveTrailParticles;
+
+	UParticleSystemComponent* TakeoffChargeParticles;
 	
 	UNiagaraComponent* DashTrailNiagara;
+
+	UAudioComponent* WindAudio;
+
+	UAudioComponent* SonicBoomAudio;
 
 public:	
 	// Sets default values for this component's properties
@@ -28,19 +34,34 @@ public:
 
 	FORCEINLINE void SetDiveTrail(UParticleSystemComponent* DiveTrail) { DiveTrailParticles = DiveTrail; }
 
+	FORCEINLINE void SetTakeoffCharge(UParticleSystemComponent* TakeoffCharge) { TakeoffChargeParticles = TakeoffCharge; }
+
 	FORCEINLINE void SetDashTrail(UNiagaraComponent* DashTrail) { DashTrailNiagara = DashTrail; }
+
+	FORCEINLINE void SetWindAudio(UAudioComponent* Wind) { WindAudio = Wind; }
 
 	void ActivateSonicBoom();
 
-	UFUNCTION()
-		void ActivateDiveTrail();
+	void ActivateDiveTrail();
 
-	UFUNCTION()
-		void ActivateDiveLand(FVector LandLocation);
+	void ActivateHardLanding(FVector LandLocation);
+
+	void ActivateDiveLand(FVector LandLocation);
 
 	void ToggleDashTrail(bool Enable);
 
+	void ToggleTakeOffCharge(bool Enable, bool Activate = false);
+
 private:
+	UPROPERTY(EditDefaultsOnly, Category = DiveEffects)
+		UParticleSystem* HardLandingEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = DashEffects)
+		USoundBase* SonicBoomSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = DiveEffects)
+		USoundBase* LandSound;
+	
 	UPROPERTY(EditDefaultsOnly, Category = DiveEffects)
 		UParticleSystem* DiveLandEffect;
 
@@ -52,4 +73,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = TakeoffEffects)
 		FRotator SonicBoomTakeoffOrientation;
+
+	UPROPERTY(EditDefaultsOnly, Category = DashEffects)
+		float SonicBoomSoundStartTime = 1.f;
 };

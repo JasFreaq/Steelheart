@@ -23,8 +23,7 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	UFUNCTION()
-		void Fly();
+	void Fly();
 
 	void StopFlying();
 
@@ -36,9 +35,15 @@ public:
 
 	void LeftDodge();
 
-	void HandleCharacterLanding(const FHitResult& Hit);
+	/**
+	 * @param Hit Result describing the landing that resulted in a valid landing spot.
+	 * @return Returns true if landing was hard, otherwise returns false.
+	 */
+	bool HandleCharacterLanding(const FHitResult& Hit);
 
 	void SetLandingInitiationLocationZ(float Value);
+
+	void StopDivebomb();
 
 	FORCEINLINE FInitiatedDivebomb* GetDivebombInitiateDelegate() { return &OnInitiateDivebomb; }
 
@@ -167,7 +172,7 @@ private:
 	FInitiatedDivebomb OnInitiateDivebomb;
 
 	FEndDivebombLand OnDivebombLandEnd;
-
+	
 	bool bWasDashing;
 
 	bool bIsDodging;

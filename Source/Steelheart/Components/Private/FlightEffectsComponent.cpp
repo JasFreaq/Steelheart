@@ -5,6 +5,7 @@
 
 #include "GameFramework/Character.h"
 #include "NiagaraComponent.h"
+#include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 
@@ -21,14 +22,22 @@ void UFlightEffectsComponent::ActivateSonicBoom()
 	SonicBoomParticles->SetRelativeRotation(SonicBoomDefaultOrientation);
 	
 	SonicBoomParticles->Activate(true);
+	UGameplayStatics::SpawnSoundAttached(SonicBoomSound, OwnerCharacter->GetMesh());
 }
 
 void UFlightEffectsComponent::ActivateDiveTrail()
 {
 	SonicBoomParticles->SetRelativeRotation(SonicBoomDiveOrientation);
 	SonicBoomParticles->Activate(true);
+	SonicBoomAudio = UGameplayStatics::SpawnSoundAttached(SonicBoomSound, OwnerCharacter->GetMesh());
 
 	DiveTrailParticles->Activate(true);
+}
+
+void UFlightEffectsComponent::ActivateHardLanding(FVector LandLocation)
+{
+	UGameplayStatics::SpawnEmitterAtLocation(this, HardLandingEffect, LandLocation);
+	UGameplayStatics::SpawnSoundAttached(LandSound, OwnerCharacter->GetMesh());
 }
 
 void UFlightEffectsComponent::ActivateDiveLand(FVector LandLocation)
@@ -36,6 +45,13 @@ void UFlightEffectsComponent::ActivateDiveLand(FVector LandLocation)
 	DiveTrailParticles->Deactivate();
 
 	UGameplayStatics::SpawnEmitterAtLocation(this, DiveLandEffect, LandLocation);
+
+	if (SonicBoomAudio != nullptr)
+	{
+		SonicBoomAudio->Stop();
+		SonicBoomAudio = nullptr;
+	}
+	UGameplayStatics::SpawnSoundAttached(LandSound, OwnerCharacter->GetMesh());
 }
 
 void UFlightEffectsComponent::ToggleDashTrail(bool Enable)
@@ -43,9 +59,30 @@ void UFlightEffectsComponent::ToggleDashTrail(bool Enable)
 	if (Enable)
 	{
 		DashTrailNiagara->Activate(true);
+		WindAudio->Activate(true);
 	}
 	else
 	{
 		DashTrailNiagara->Deactivate();
+		WindAudio->Deactivate();
+	}
+}
+
+void UFlightEffectsComponent::ToggleTakeOffCharge(bool Enable, bool Activate)
+{
+	if (Enable)
+	{
+		TakeoffChargeParticles->Activate(true);
+	}
+	else
+	{
+		TakeoffChargeParticles->Deactivate();
+
+		if (Activate)
+		{
+			SonicBoomParticles->SetRelativeRotation(SonicBoomTakeoffOrientation);
+			SonicBoomParticles->Activate(true);
+			UGameplayStatics::SpawnSoundAttached(SonicBoomSound, OwnerCharacter->GetMesh());
+		}
 	}
 }

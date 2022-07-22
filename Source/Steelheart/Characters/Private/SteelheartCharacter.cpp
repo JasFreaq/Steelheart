@@ -3,6 +3,7 @@
 #include "Steelheart/Characters/Public/SteelheartCharacter.h"
 
 #include "Camera/CameraComponent.h"
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -62,15 +63,15 @@ ASteelheartCharacter::ASteelheartCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset (to avoid direct content references in C++)
 
-	FlightEffects = CreateDefaultSubobject<UFlightEffectsComponent>(TEXT("FlightEffectsComponent"));
-
 	FlightLocomotion = CreateDefaultSubobject<UFlightLocomotionComponent>(TEXT("FlightLocomotionComponent"));
-	FlightLocomotion->GetDivebombInitiateDelegate()->BindUFunction(FlightEffects, "ActivateDiveTrail");
-	FlightLocomotion->GetDivebombLandEndDelegate()->BindUFunction(FlightEffects, "ActivateDiveLand");
+	FlightLocomotion->GetDivebombInitiateDelegate()->BindUFunction(this, "Dive");
+	FlightLocomotion->GetDivebombLandEndDelegate()->BindUFunction(this, "LandDive");
 
 	FlightTakeoff = CreateDefaultSubobject<UFlightTakeoffComponent>(TEXT("FlightTakeoffComponent"));
-	FlightTakeoff->GetTakeoffReleaseDelegate()->BindUFunction(FlightLocomotion, "Fly");
-		
+	FlightTakeoff->GetTakeoffReleaseDelegate()->BindUFunction(this, "ReleaseTakeoff");
+
+	FlightEffects = CreateDefaultSubobject<UFlightEffectsComponent>(TEXT("FlightEffectsComponent"));
+
 	InitializeEffects();
 
 	bLocomotionEnabled = true;
@@ -85,20 +86,20 @@ void ASteelheartCharacter::Tick(float DeltaSeconds)
 
 	UpdateLocomotion(DeltaSeconds);
 
-	bool NoInput = FMath::IsNearlyZero(ForwardInput) && FMath::IsNearlyZero(RightInput)
-		&& FMath::IsNearlyZero(UpInput);
+	bool NoInput = FMath::IsNearlyZero(FrameInputs.X) && FMath::IsNearlyZero(FrameInputs.Y)
+		&& FMath::IsNearlyZero(FrameInputs.Z);
 	if (bIsDashing)
 	{
 		if (GetCharacterMovement()->IsFlying())
 		{
-			if (FMath::IsNearlyZero(ForwardInput) || ForwardInput < 0.f)
+			if (FMath::IsNearlyZero(FrameInputs.X) || FrameInputs.X < 0.f)
 			{
 				StopDashing();
 			}
 		}
 		else
 		{
-			if (FMath::IsNearlyZero(ForwardInput) && FMath::IsNearlyZero(RightInput))
+			if (FMath::IsNearlyZero(FrameInputs.X) && FMath::IsNearlyZero(FrameInputs.Y))
 			{
 				StopDashing();
 			}
@@ -107,7 +108,7 @@ void ASteelheartCharacter::Tick(float DeltaSeconds)
 	
 	if (bProcessDashLerp || bProcessStopDashLerp)
 	{
-		ProcessDashLerp(DeltaSeconds);
+		ProcessCameraBoomLerp(DeltaSeconds);
 	}
 }
 
@@ -167,6 +168,8 @@ void ASteelheartCharacter::HandleFlyInput()
 			bUseControllerRotationYaw = true;
 			GetCharacterMovement()->bOrientRotationToMovement = false;
 
+			FlightLocomotion->StopDivebomb();
+
 			FlightLocomotion->Fly();
 			if (bIsDashing)
 			{
@@ -193,13 +196,13 @@ void ASteelheartCharacter::HandleDashInput()
 		{
 			if (GetCharacterMovement()->IsFlying())
 			{
-				if (ForwardInput > 0.f)
+				if (FrameInputs.X > 0.f)
 				{
 					Dash();
 				}
 			}
 			else if (GetCharacterMovement()->IsWalking() &&
-				!(FMath::IsNearlyZero(FMath::Abs(ForwardInput)) && FMath::IsNearlyZero(RightInput)))
+				!(FMath::IsNearlyZero(FMath::Abs(FrameInputs.X)) && FMath::IsNearlyZero(FrameInputs.Y)))
 			{
 				Dash();
 			}
@@ -209,9 +212,11 @@ void ASteelheartCharacter::HandleDashInput()
 
 void ASteelheartCharacter::HandleTakeoffEngageInput()
 {
-	if (FMath::IsNearlyZero(ForwardInput) && FMath::IsNearlyZero(RightInput))
+	if (GetCharacterMovement()->IsWalking() &&
+		FMath::IsNearlyZero(FrameInputs.X) && FMath::IsNearlyZero(FrameInputs.Y))
 	{
 		FlightTakeoff->EngageTakeOff();
+		FlightEffects->ToggleTakeOffCharge(true);
 	}
 }
 
@@ -243,7 +248,7 @@ void ASteelheartCharacter::MoveForward(float Value)
 		}
 	}
 
-	ForwardInput = Value;
+	FrameInputs.X = Value;
 }
 
 void ASteelheartCharacter::MoveRight(float Value)
@@ -280,7 +285,7 @@ void ASteelheartCharacter::MoveRight(float Value)
 		}
 	}
 
-	RightInput = FMath::Abs(Value);
+	FrameInputs.Y = FMath::Abs(Value);
 }
 
 void ASteelheartCharacter::MoveUp(float Value)
@@ -294,7 +299,7 @@ void ASteelheartCharacter::MoveUp(float Value)
 		}
 	}
 
-	UpInput = FMath::Abs(Value);
+	FrameInputs.Z = FMath::Abs(Value);
 }
 
 void ASteelheartCharacter::TurnAtRate(float Rate)
@@ -325,6 +330,16 @@ void ASteelheartCharacter::InitializeEffects()
 	DashTrailNiagara->SetAutoActivate(false);
 	DashTrailNiagara->SetupAttachment(GetMesh());
 	FlightEffects->SetDashTrail(DashTrailNiagara);
+
+	TakeoffChargeParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("TakeoffChargeParticles"));
+	TakeoffChargeParticles->SetAutoActivate(false);
+	TakeoffChargeParticles->SetupAttachment(GetMesh());
+	FlightEffects->SetTakeoffCharge(TakeoffChargeParticles);
+
+	WindAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
+	WindAudio->SetAutoActivate(false);
+	WindAudio->SetupAttachment(GetMesh());
+	FlightEffects->SetWindAudio(WindAudio);
 }
 
 void ASteelheartCharacter::UpdateLocomotion(float DeltaSeconds)
@@ -400,12 +415,8 @@ void ASteelheartCharacter::Dash()
 	MaxSpeedTarget = DashSpeed;
 	GetCharacterMovement()->JumpZVelocity = DashJumpZVelocity;
 
-	bProcessDashLerp = true;
-	if (bProcessStopDashLerp)
-	{
-		bProcessStopDashLerp = false;
-		InverseDashLerp();
-	}
+	CameraBoomLerpTime = DashLerpTime;
+	StartCameraBoomLerp();
 }
 
 void ASteelheartCharacter::StopDashing()
@@ -425,12 +436,7 @@ void ASteelheartCharacter::StopDashing()
 	MaxSpeedTarget = RunSpeed;
 	GetCharacterMovement()->JumpZVelocity = BaseJumpZVelocity;
 
-	bProcessStopDashLerp = true;
-	if (bProcessDashLerp)
-	{
-		bProcessDashLerp = false;
-		InverseDashLerp();
-	}
+	StopCameraBoomLerp();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -440,7 +446,10 @@ void ASteelheartCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 
-	FlightLocomotion->HandleCharacterLanding(Hit);
+	if (FlightLocomotion->HandleCharacterLanding(Hit))
+	{
+		FlightEffects->ActivateHardLanding(Hit.ImpactPoint);
+	}
 }
 
 void ASteelheartCharacter::OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal,
@@ -467,43 +476,88 @@ void ASteelheartCharacter::NotifyJumpApex()
 	FlightLocomotion->SetLandingInitiationLocationZ(GetActorLocation().Z);
 }
 
+void ASteelheartCharacter::Dive()
+{
+	FlightEffects->ActivateDiveTrail();
+
+	CameraBoomLerpTime = DiveLerpTime;
+	StartCameraBoomLerp();
+}
+
+void ASteelheartCharacter::LandDive(FVector LandLocation)
+{
+	FlightEffects->ActivateDiveLand(LandLocation);
+
+	StopCameraBoomLerp();
+}
+
+void ASteelheartCharacter::ReleaseTakeoff(bool Activate)
+{
+	if (Activate)
+	{
+		FlightLocomotion->Fly();
+	}
+
+	FlightEffects->ToggleTakeOffCharge(false, Activate);
+}
+
+void ASteelheartCharacter::StartCameraBoomLerp()
+{
+	bProcessDashLerp = true;
+	if (bProcessStopDashLerp)
+	{
+		bProcessStopDashLerp = false;
+		InverseCameraBoomLerp();
+	}
+}
+
+void ASteelheartCharacter::StopCameraBoomLerp()
+{
+	bProcessStopDashLerp = true;
+	if (bProcessDashLerp)
+	{
+		bProcessDashLerp = false;
+		InverseCameraBoomLerp();
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 // Dash Helper Functions
 
-void ASteelheartCharacter::ProcessDashLerp(float DeltaSeconds)
+void ASteelheartCharacter::ProcessCameraBoomLerp(float DeltaSeconds)
 {
 	float InitialBoomLength, TargetBoomLength;
 
 	if (bProcessDashLerp)
 	{
 		InitialBoomLength = CameraBoomBaseLength;
-		TargetBoomLength = CameraBoomDashLength;
+		TargetBoomLength = CameraBoomTargetLength;
 	}
 	else if (bProcessStopDashLerp)
 	{
-		InitialBoomLength = CameraBoomDashLength;
+		InitialBoomLength = CameraBoomTargetLength;
 		TargetBoomLength = CameraBoomBaseLength;
 	}
 	
-	DashLerpTimeCounter += DeltaSeconds;
-	DashLerpAlpha = DashLerpTimeCounter / DashLerpTime;
+	CameraBoomLerpTimeCounter += DeltaSeconds;
+	CameraBoomLerpAlpha = CameraBoomLerpTimeCounter / CameraBoomLerpTime;
 	
-	CameraBoom->TargetArmLength = FMath::Lerp(InitialBoomLength, TargetBoomLength, DashLerpAlpha);
+	CameraBoom->TargetArmLength = FMath::Lerp(InitialBoomLength, TargetBoomLength, CameraBoomLerpAlpha);
 
-	if (DashLerpAlpha >= 1.f)
+	if (CameraBoomLerpAlpha >= 1.f)
 	{
 		bProcessDashLerp = false;
 		bProcessStopDashLerp = false;
 		
 		CameraBoom->TargetArmLength = TargetBoomLength;
 
-		DashLerpTimeCounter = 0.f;
-		DashLerpAlpha = 0.f;
+		CameraBoomLerpTimeCounter = 0.f;
+		CameraBoomLerpAlpha = 0.f;
 	}
 }
 
-void ASteelheartCharacter::InverseDashLerp()
+void ASteelheartCharacter::InverseCameraBoomLerp()
 {
-	DashLerpTimeCounter = DashLerpTime - DashLerpTimeCounter;
-	DashLerpAlpha = 1.f - DashLerpAlpha;
+	CameraBoomLerpTimeCounter = DashLerpTime - CameraBoomLerpTimeCounter;
+	CameraBoomLerpAlpha = 1.f - CameraBoomLerpAlpha;
 }

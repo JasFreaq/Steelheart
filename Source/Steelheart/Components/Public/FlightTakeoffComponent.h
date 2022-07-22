@@ -8,7 +8,7 @@
 
 #define RATE_SCALE 1.f
 
-DECLARE_DELEGATE(FReleasedTakeoff);
+DECLARE_DELEGATE_OneParam(FReleasedTakeoff, bool);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class STEELHEART_API UFlightTakeoffComponent : public UFlightComponent
