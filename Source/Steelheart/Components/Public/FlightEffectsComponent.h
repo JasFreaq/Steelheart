@@ -7,6 +7,7 @@
 #include "FlightEffectsComponent.generated.h"
 
 class UParticleSystemComponent;
+class UNiagaraSystem;
 class UNiagaraComponent;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -54,17 +55,17 @@ public:
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = DiveEffects)
-		UParticleSystem* HardLandingEffect;
+		UNiagaraSystem* HardLandingEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = DiveEffects)
+		UNiagaraSystem* DiveLandEffect;
 
 	UPROPERTY(EditDefaultsOnly, Category = DashEffects)
 		USoundBase* SonicBoomSound;
 
 	UPROPERTY(EditDefaultsOnly, Category = DiveEffects)
 		USoundBase* LandSound;
-	
-	UPROPERTY(EditDefaultsOnly, Category = DiveEffects)
-		UParticleSystem* DiveLandEffect;
-
+		
 	UPROPERTY(EditDefaultsOnly, Category = DashEffects)
 		FRotator SonicBoomDefaultOrientation;
 

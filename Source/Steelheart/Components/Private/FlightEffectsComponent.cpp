@@ -3,10 +3,11 @@
 
 #include "Steelheart/Components/Public/FlightEffectsComponent.h"
 
-#include "GameFramework/Character.h"
-#include "NiagaraComponent.h"
 #include "Components/AudioComponent.h"
+#include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Particles/ParticleSystemComponent.h"
 
 // Sets default values for this component's properties
@@ -36,7 +37,7 @@ void UFlightEffectsComponent::ActivateDiveTrail()
 
 void UFlightEffectsComponent::ActivateHardLanding(FVector LandLocation)
 {
-	UGameplayStatics::SpawnEmitterAtLocation(this, HardLandingEffect, LandLocation);
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, HardLandingEffect, LandLocation);
 	UGameplayStatics::SpawnSoundAttached(LandSound, OwnerCharacter->GetMesh());
 }
 
@@ -44,8 +45,8 @@ void UFlightEffectsComponent::ActivateDiveLand(FVector LandLocation)
 {
 	DiveTrailParticles->Deactivate();
 
-	UGameplayStatics::SpawnEmitterAtLocation(this, DiveLandEffect, LandLocation);
-
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, DiveLandEffect, LandLocation);
+	
 	if (SonicBoomAudio != nullptr)
 	{
 		SonicBoomAudio->Stop();

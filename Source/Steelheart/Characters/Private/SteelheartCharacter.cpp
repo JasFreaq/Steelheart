@@ -495,6 +495,9 @@ void ASteelheartCharacter::ReleaseTakeoff(bool Activate)
 {
 	if (Activate)
 	{
+		bUseControllerRotationYaw = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+
 		FlightLocomotion->Fly();
 	}
 
