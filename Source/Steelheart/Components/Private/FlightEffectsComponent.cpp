@@ -9,6 +9,7 @@
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Steelheart/Components/Public/FlightEffectsComponent.h"
 
 // Sets default values for this component's properties
 UFlightEffectsComponent::UFlightEffectsComponent()
@@ -26,18 +27,17 @@ void UFlightEffectsComponent::ActivateSonicBoom()
 	UGameplayStatics::SpawnSoundAttached(SonicBoomSound, OwnerCharacter->GetMesh());
 }
 
-void UFlightEffectsComponent::ActivateHover(bool Hover)
+void UFlightEffectsComponent::ActivateHover()
 {
-	if (Hover)
-	{
-		HoverNiagara->SetAsset(HoverEffect);
-		HoverNiagara->Activate(true);
-	}
-	else
-	{
-		HoverNiagara->SetAsset(DodgeEffect);
-		HoverNiagara->Activate(true);
-	}
+	HoverNiagara->SetAsset(HoverEffect);
+	HoverNiagara->Activate(true);
+}
+
+void UFlightEffectsComponent::ActivateDodge(bool Right)
+{
+	HoverNiagara->SetAsset(DodgeEffect);
+	HoverNiagara->SetNiagaraVariableFloat(FString(TEXT("User.Direction")), Right ? 1.f : -1.f);
+	HoverNiagara->Activate(true);
 }
 
 void UFlightEffectsComponent::ActivateDiveTrail()

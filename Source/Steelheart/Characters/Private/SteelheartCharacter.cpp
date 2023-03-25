@@ -88,6 +88,7 @@ void ASteelheartCharacter::Tick(float DeltaSeconds)
 
 	bool NoInput = FMath::IsNearlyZero(FrameInputs.X) && FMath::IsNearlyZero(FrameInputs.Y)
 		&& FMath::IsNearlyZero(FrameInputs.Z);
+
 	if (bIsDashing)
 	{
 		if (GetCharacterMovement()->IsFlying())
@@ -170,7 +171,7 @@ void ASteelheartCharacter::HandleFlyInput()
 
 			FlightLocomotion->StopDivebomb();
 			FlightLocomotion->Fly();
-			FlightEffects->ActivateHover(true);
+			FlightEffects->ActivateHover();
 
 			if (bIsDashing)
 			{
@@ -267,9 +268,11 @@ void ASteelheartCharacter::MoveRight(float Value)
 
 			if (GetCharacterMovement()->IsFlying() && bIsDashing)
 			{
-				if (FMath::Abs(Value) >= 0.8f)
+				if (FMath::Abs(Value) >= 0.8f && !FlightLocomotion->GetIsDodging())
 				{
-					if (Value >= 0.f)
+					bool IsRight = Value >= 0.f;
+
+					if (IsRight)
 					{
 						FlightLocomotion->RightDodge();
 					}
@@ -278,7 +281,7 @@ void ASteelheartCharacter::MoveRight(float Value)
 						FlightLocomotion->LeftDodge();
 					}
 
-					FlightEffects->ActivateHover(false);
+					FlightEffects->ActivateDodge(IsRight);
 				}
 			}
 			else // add movement in that direction

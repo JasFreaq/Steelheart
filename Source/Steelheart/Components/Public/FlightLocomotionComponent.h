@@ -49,6 +49,8 @@ public:
 
 	FORCEINLINE FEndDivebombLand* GetDivebombLandEndDelegate() { return &OnDivebombLandEnd; }
 
+	FORCEINLINE bool GetIsDodging() { return bIsDodging; }
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;

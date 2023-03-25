@@ -47,7 +47,9 @@ public:
 
 	void ActivateSonicBoom();
 
-	void ActivateHover(bool Hover);
+	void ActivateHover();
+
+	void ActivateDodge(bool Right);
 
 	void ActivateDiveTrail();
 
