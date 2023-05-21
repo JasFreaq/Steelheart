@@ -10,7 +10,7 @@
 
 DECLARE_DELEGATE_OneParam(FReleasedTakeoff, bool);
 
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (FlightLocomotion))
 class STEELHEART_API UFlightTakeoffComponent : public UFlightComponent
 {
 	GENERATED_BODY()

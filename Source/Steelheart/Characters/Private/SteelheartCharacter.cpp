@@ -6,12 +6,16 @@
 #include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
+#include "Components/SphereComponent.h"
+#include "Field/FieldSystemComponent.h"
+#include "Field/FieldSystemObjects.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Steelheart/Components/Public/FlightCollisionComponent.h"
 #include "Steelheart/Components/Public/FlightLocomotionComponent.h"
 #include "Steelheart/Components/Public/FlightTakeoffComponent.h"
 #include "Steelheart/Components/Public/FlightEffectsComponent.h"
@@ -71,8 +75,10 @@ ASteelheartCharacter::ASteelheartCharacter()
 	FlightTakeoff->GetTakeoffReleaseDelegate()->BindUFunction(this, "ReleaseTakeoff");
 
 	FlightEffects = CreateDefaultSubobject<UFlightEffectsComponent>(TEXT("FlightEffectsComponent"));
-
 	InitializeEffects();
+
+	FlightCollision = CreateDefaultSubobject<UFlightCollisionComponent>(TEXT("FlightCollisionComponent"));
+	InitializeCollision();
 
 	bLocomotionEnabled = true;
 }
@@ -351,6 +357,26 @@ void ASteelheartCharacter::InitializeEffects()
 	WindAudio->SetAutoActivate(false);
 	WindAudio->SetupAttachment(GetMesh());
 	FlightEffects->SetWindAudio(WindAudio);
+}
+
+void ASteelheartCharacter::InitializeCollision()
+{
+	FieldSystem = CreateDefaultSubobject<UFieldSystemComponent>(TEXT("FieldSystemComponent"));
+	FieldSystem->SetupAttachment(RootComponent);
+	FlightCollision->SetFieldSystem(FieldSystem);
+
+	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
+	CollisionSphere->SetupAttachment(FieldSystem);
+	FlightCollision->SetCollisionSphere(CollisionSphere);
+
+	RadialFalloff = CreateDefaultSubobject<URadialFalloff>(TEXT("RadialFalloff"));
+	FlightCollision->SetRadialFalloff(RadialFalloff);
+
+	RadialVector = CreateDefaultSubobject<URadialVector>(TEXT("RadialVector"));
+	FlightCollision->SetRadialVector(RadialVector);
+
+	CullingField = CreateDefaultSubobject<UCullingField>(TEXT("CullingField"));
+	FlightCollision->SetCullingField(CullingField);
 }
 
 void ASteelheartCharacter::UpdateLocomotion(float DeltaSeconds)

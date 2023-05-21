@@ -9,7 +9,6 @@
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Particles/ParticleSystemComponent.h"
-#include "Steelheart/Components/Public/FlightEffectsComponent.h"
 
 // Sets default values for this component's properties
 UFlightEffectsComponent::UFlightEffectsComponent()

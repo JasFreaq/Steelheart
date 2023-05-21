@@ -34,6 +34,10 @@ class ASteelheartCharacter : public ACharacter, public IFlightLocomotionInterfac
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
 		class UFlightEffectsComponent* FlightEffects;
 
+	/** Flight collision */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
+		class UFlightCollisionComponent* FlightCollision;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DashEffects, meta = (AllowPrivateAccess = "true"))
 		UParticleSystemComponent* SonicBoomParticles;
 
@@ -51,6 +55,21 @@ class ASteelheartCharacter : public ACharacter, public IFlightLocomotionInterfac
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = SoundEffects, meta = (AllowPrivateAccess = "true"))
 		UAudioComponent* WindAudio;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = FlightCollision, meta = (AllowPrivateAccess = "true"))
+		class UFieldSystemComponent* FieldSystem;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = FlightCollision, meta = (AllowPrivateAccess = "true"))
+		class USphereComponent* CollisionSphere;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = FlightCollision, meta = (AllowPrivateAccess = "true"))
+		class URadialFalloff* RadialFalloff;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = FlightCollision, meta = (AllowPrivateAccess = "true"))
+		class URadialVector* RadialVector;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = FlightCollision, meta = (AllowPrivateAccess = "true"))
+		class UCullingField* CullingField;
 
 public:
 	ASteelheartCharacter();
@@ -97,6 +116,8 @@ protected:
 
 private:
 	void InitializeEffects();
+
+	void InitializeCollision();
 
 	void UpdateLocomotion(float DeltaSeconds);
 

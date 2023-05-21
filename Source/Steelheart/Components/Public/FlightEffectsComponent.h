@@ -10,7 +10,7 @@ class UParticleSystemComponent;
 class UNiagaraSystem;
 class UNiagaraComponent;
 
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (FlightLocomotion))
 class STEELHEART_API UFlightEffectsComponent : public UFlightComponent
 {
 	GENERATED_BODY()

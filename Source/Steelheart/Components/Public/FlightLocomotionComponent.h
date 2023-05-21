@@ -11,7 +11,7 @@
 DECLARE_DELEGATE(FInitiatedDivebomb);
 DECLARE_DELEGATE_OneParam(FEndDivebombLand, FVector);
 
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (FlightLocomotion))
 class STEELHEART_API UFlightLocomotionComponent : public UFlightComponent
 {
 	GENERATED_BODY()

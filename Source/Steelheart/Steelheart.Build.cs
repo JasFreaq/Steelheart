@@ -10,6 +10,6 @@ public class Steelheart : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay" });
 		
-        PublicDependencyModuleNames.AddRange(new string[] { "Niagara" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Niagara", "FieldSystemEngine" });
 	}
 }
