@@ -6,6 +6,7 @@
 #include "Field/FieldSystemComponent.h"
 #include "Field/FieldSystemObjects.h"
 #include "GameFramework/Character.h"
+#include "Steelheart/Interfaces/Public/FlightLocomotionInterface.h"
 
 // Sets default values for this component's properties
 UFlightCollisionComponent::UFlightCollisionComponent()
@@ -13,6 +14,21 @@ UFlightCollisionComponent::UFlightCollisionComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
+
+	HitBufferTimerDelegate.BindUFunction(this, "ResetHit");
+}
+
+void UFlightCollisionComponent::OnCharacterHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (bCanExplode && FlightLocomotionInterface->IsDashing()
+		&& OtherActor->ActorHasTag(DestructibleTag))
+	{
+		Explode();
+
+		bCanExplode = false;
+		GetWorld()->GetTimerManager().SetTimer(HitBufferTimerHandle, HitBufferTimerDelegate, HitBufferTime, false);
+	}
 }
 
 void UFlightCollisionComponent::Explode()
@@ -29,4 +45,11 @@ void UFlightCollisionComponent::Explode()
 	UFieldNodeBase* CullingFieldNode = CullingField->SetCullingField(RadialFalloffNode, RadialVectorNode, Field_Culling_Outside);
 
 	FieldSystem->ApplyPhysicsField(true, Field_LinearVelocity, nullptr, CullingFieldNode);
+}
+
+void UFlightCollisionComponent::ResetHit()
+{
+	bCanExplode = true;
+
+	GetWorld()->GetTimerManager().ClearTimer(HitBufferTimerHandle);
 }

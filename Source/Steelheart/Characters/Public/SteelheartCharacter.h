@@ -81,6 +81,8 @@ public:
 	FORCEINLINE virtual void SetLocomotionEnabled(bool Enabled) override { bLocomotionEnabled = Enabled; }
 
 protected:
+	virtual void BeginPlay() override;
+
 	virtual void Tick(float DeltaSeconds) override;
 
 	// APawn interface
@@ -134,13 +136,13 @@ private:
 	void Dash();
 
 	void StopDashing();
-
+		
 	virtual void Landed(const FHitResult& Hit) override;
 
 	virtual void OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta) override;
 
 	virtual void NotifyJumpApex() override;
-
+		
 	UFUNCTION()
 		void Dive();
 

@@ -86,6 +86,13 @@ ASteelheartCharacter::ASteelheartCharacter()
 //////////////////////////////////////////////////////////////////////////
 // Lifecycle Functions
 
+void ASteelheartCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	GetCapsuleComponent()->OnComponentHit.AddDynamic(FlightCollision, &UFlightCollisionComponent::OnCharacterHit);
+}
+
 void ASteelheartCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -476,7 +483,7 @@ void ASteelheartCharacter::StopDashing()
 	StopCameraBoomLerp();
 }
 
-//////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////
 // Landing Handling
 
 void ASteelheartCharacter::Landed(const FHitResult& Hit)

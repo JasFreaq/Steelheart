@@ -34,8 +34,8 @@ public:
 	// Sets default values for this component's properties
 	UFlightCollisionComponent();
 
-	UFUNCTION(BlueprintCallable)
-		void Explode();
+	UFUNCTION()
+		void OnCharacterHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 	FORCEINLINE void SetFieldSystem(UFieldSystemComponent* Field) { FieldSystem = Field; }
 
@@ -48,9 +48,26 @@ public:
 	FORCEINLINE void SetCullingField(UCullingField* Culling) { CullingField = Culling; }
 	
 private:
+	void Explode();
+
+	UFUNCTION()
+		void ResetHit();
+
 	UPROPERTY(EditDefaultsOnly, Category = FlightCollision)
 		float FalloffMagnitude = 500000.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = FlightCollision)
 		float VectorMagnitude = 1000.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = FlightCollision)
+		FName DestructibleTag = "Destructible";
+
+	UPROPERTY(EditDefaultsOnly, Category = FlightCollision)
+		float HitBufferTime = 0.8f;
+
+	FTimerHandle HitBufferTimerHandle;
+
+	FTimerDelegate HitBufferTimerDelegate;
+
+	bool bCanExplode = true;
 };
