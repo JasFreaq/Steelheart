@@ -6,10 +6,10 @@ public class Steelheart : ModuleRules
 {
 	public Steelheart(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "HeadMountedDisplay" });
 		
-        PublicDependencyModuleNames.AddRange(new string[] { "Niagara", "FieldSystemEngine" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Niagara", "FieldSystemEngine", "ProceduralMeshComponent" });
 	}
 }
