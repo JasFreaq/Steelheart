@@ -34,8 +34,6 @@ public:
 	// Sets default values for this component's properties
 	UFlightEffectsComponent();
 	
-	void InitializeEffects();
-
 	void ActivateSonicBoom();
 
 	void ActivateHover();
@@ -52,6 +50,10 @@ public:
 
 	void ToggleTakeOffCharge(bool Enable, bool Activate = false);
 
+protected:
+
+	virtual void InitializeFlightComponent() override;
+
 private:
 	//Misc Flight
 
@@ -62,7 +64,13 @@ private:
 		UNiagaraSystem* HoverEffect;
 
 	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
+		FVector HoverPosition = FVector(0, 0, 89);
+
+	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
 		UNiagaraSystem* DashTrailEffect;
+	
+	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
+		FRotator DashTrailOrientation = FRotator(0, 90, 0);
 
 	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
 		UNiagaraSystem* DodgeEffect;
@@ -82,13 +90,19 @@ private:
 		USoundBase* SonicBoomSound;
 
 	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
-		FRotator SonicBoomDefaultOrientation;
+		FVector SonicBoomDefaultPosition = FVector(0, 0, 89);
 
 	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
-		FRotator SonicBoomDiveOrientation;
+		FVector SonicBoomDivePosition = FVector(0, 0, 178);
 
 	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
-		FRotator SonicBoomTakeoffOrientation;
+		FRotator SonicBoomDefaultOrientation = FRotator(0, -90, 0);
+
+	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
+		FRotator SonicBoomDiveOrientation = FRotator(90, 0, 0);;
+
+	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
+		FRotator SonicBoomTakeoffOrientation = FRotator(-90, 0, 0);;
 
 	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
 		float SonicBoomSoundStartTime = 1.f;
@@ -105,9 +119,9 @@ private:
 		USoundBase* DiveLandSound;
 
 		
-	UParticleSystemComponent* SetupParticleSystemComponent(UParticleSystem* ParticleTemplate);
+	UParticleSystemComponent* SetupParticleSystemComponent(UParticleSystem* ParticleTemplate, FVector CompLoc = FVector(0, 0, 0), FRotator CompRot = FRotator(0, 0, 0));
 
-	UNiagaraComponent* SetupNiagaraComponent(UNiagaraSystem* NiagaraSystemAsset);
+	UNiagaraComponent* SetupNiagaraComponent(UNiagaraSystem* NiagaraSystemAsset, FVector CompLoc = FVector(0, 0, 0), FRotator CompRot = FRotator(0, 0, 0));
 
-	UAudioComponent* SetupAudioComponent(USoundBase* AudioSound);
+	UAudioComponent* SetupAudioComponent(USoundBase* AudioSound, FVector CompLoc = FVector(0, 0, 0), FRotator CompRot = FRotator(0, 0, 0));
 };

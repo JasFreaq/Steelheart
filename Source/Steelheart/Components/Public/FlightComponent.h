@@ -24,11 +24,9 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+	
+	virtual void InitializeFlightComponent();
 		
-private:
-	void InitializeFlightComponent();
-		
-protected:
 	ACharacter* OwnerCharacter = nullptr;
 
 	IFlightLocomotionInterface* FlightLocomotionInterface = nullptr;

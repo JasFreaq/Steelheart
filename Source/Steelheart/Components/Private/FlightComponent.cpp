@@ -16,7 +16,6 @@ UFlightComponent::UFlightComponent()
 	
 }
 
-
 // Called when the game starts
 void UFlightComponent::BeginPlay()
 {

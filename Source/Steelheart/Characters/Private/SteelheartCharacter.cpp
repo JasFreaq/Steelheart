@@ -89,8 +89,6 @@ void ASteelheartCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	GetCapsuleComponent()->OnComponentHit.AddDynamic(FlightCollision, &UFlightCollisionComponent::OnCharacterHit);
-
-	FlightEffects->InitializeEffects();
 }
 
 void ASteelheartCharacter::Tick(float DeltaSeconds)

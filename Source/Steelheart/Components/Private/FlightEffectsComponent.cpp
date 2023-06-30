@@ -16,16 +16,19 @@ UFlightEffectsComponent::UFlightEffectsComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = false;
+	
 }
 
-void UFlightEffectsComponent::InitializeEffects()
+void UFlightEffectsComponent::InitializeFlightComponent()
 {
-	SonicBoomParticles = SetupParticleSystemComponent(SonicBoomEffect);
+	Super::InitializeFlightComponent();
+
+	SonicBoomParticles = SetupParticleSystemComponent(SonicBoomEffect, SonicBoomDefaultPosition, SonicBoomDefaultOrientation);
 	DiveTrailParticles = SetupParticleSystemComponent(DiveTrailEffect);
 	TakeoffChargeParticles = SetupParticleSystemComponent(TakeoffChargeEffect);
 
-	HoverNiagara = SetupNiagaraComponent(HoverEffect);
-	DashTrailNiagara = SetupNiagaraComponent(DashTrailEffect);
+	HoverNiagara = SetupNiagaraComponent(HoverEffect, HoverPosition);
+	DashTrailNiagara = SetupNiagaraComponent(DashTrailEffect, FVector::Zero(), DashTrailOrientation);
 
 	WindAudio = SetupAudioComponent(WindSound);
 }
@@ -114,36 +117,36 @@ void UFlightEffectsComponent::ToggleTakeOffCharge(bool Enable, bool Activate)
 	}
 }
 
-UParticleSystemComponent* UFlightEffectsComponent::SetupParticleSystemComponent(UParticleSystem* ParticleTemplate)
+UParticleSystemComponent* UFlightEffectsComponent::SetupParticleSystemComponent(UParticleSystem* ParticleTemplate, FVector CompLoc, FRotator CompRot)
 {
 	UParticleSystemComponent* NewParticles = SetupAssociatedComponent<UParticleSystemComponent>();
 	if (NewParticles != nullptr)
 	{
-		NewParticles->SetRelativeLocation(FVector(0.f, 0.f, 89.f));
+		NewParticles->SetRelativeLocationAndRotation(CompLoc, CompRot);
 		NewParticles->SetTemplate(ParticleTemplate);
 	}
 
 	return NewParticles;
 }
 
-UNiagaraComponent* UFlightEffectsComponent::SetupNiagaraComponent(UNiagaraSystem* NiagaraSystemAsset)
+UNiagaraComponent* UFlightEffectsComponent::SetupNiagaraComponent(UNiagaraSystem* NiagaraSystemAsset, FVector CompLoc, FRotator CompRot)
 {
 	UNiagaraComponent* NewNiagara = SetupAssociatedComponent<UNiagaraComponent>();
 	if (NewNiagara != nullptr)
 	{
-		NewNiagara->SetRelativeLocation(FVector(0.f, 0.f, 89.f));
+		NewNiagara->SetRelativeLocationAndRotation(CompLoc, CompRot);
 		NewNiagara->SetAsset(NiagaraSystemAsset);
 	}
 
 	return NewNiagara;
 }
 
-UAudioComponent* UFlightEffectsComponent::SetupAudioComponent(USoundBase* AudioSound)
+UAudioComponent* UFlightEffectsComponent::SetupAudioComponent(USoundBase* AudioSound, FVector CompLoc, FRotator CompRot)
 {
 	UAudioComponent* NewAudio = SetupAssociatedComponent<UAudioComponent>();
 	if (NewAudio != nullptr)
 	{
-		NewAudio->SetRelativeLocation(FVector(0.f, 0.f, 89.f));
+		NewAudio->SetRelativeLocationAndRotation(CompLoc, CompRot);
 		NewAudio->SetSound(AudioSound);
 	}
 
