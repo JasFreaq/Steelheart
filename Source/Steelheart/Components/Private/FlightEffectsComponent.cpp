@@ -19,20 +19,6 @@ UFlightEffectsComponent::UFlightEffectsComponent()
 	
 }
 
-void UFlightEffectsComponent::InitializeFlightComponent()
-{
-	Super::InitializeFlightComponent();
-
-	SonicBoomParticles = SetupParticleSystemComponent(SonicBoomEffect, SonicBoomDefaultPosition, SonicBoomDefaultOrientation);
-	DiveTrailParticles = SetupParticleSystemComponent(DiveTrailEffect);
-	TakeoffChargeParticles = SetupParticleSystemComponent(TakeoffChargeEffect);
-
-	HoverNiagara = SetupNiagaraComponent(HoverEffect, HoverPosition);
-	DashTrailNiagara = SetupNiagaraComponent(DashTrailEffect, FVector::Zero(), DashTrailOrientation);
-
-	WindAudio = SetupAudioComponent(WindSound);
-}
-
 void UFlightEffectsComponent::ActivateSonicBoom()
 {
 	SonicBoomParticles->SetRelativeRotation(SonicBoomDefaultOrientation);
@@ -117,9 +103,23 @@ void UFlightEffectsComponent::ToggleTakeOffCharge(bool Enable, bool Activate)
 	}
 }
 
+void UFlightEffectsComponent::InitializeFlightComponent()
+{
+	Super::InitializeFlightComponent();
+
+	SonicBoomParticles = SetupParticleSystemComponent(SonicBoomEffect, SonicBoomDefaultPosition, SonicBoomDefaultOrientation);
+	DiveTrailParticles = SetupParticleSystemComponent(DiveTrailEffect);
+	TakeoffChargeParticles = SetupParticleSystemComponent(TakeoffChargeEffect);
+
+	HoverNiagara = SetupNiagaraComponent(HoverEffect, HoverPosition);
+	DashTrailNiagara = SetupNiagaraComponent(DashTrailEffect, FVector::Zero(), DashTrailOrientation);
+
+	WindAudio = SetupAudioComponent(WindSound);
+}
+
 UParticleSystemComponent* UFlightEffectsComponent::SetupParticleSystemComponent(UParticleSystem* ParticleTemplate, FVector CompLoc, FRotator CompRot)
 {
-	UParticleSystemComponent* NewParticles = SetupAssociatedComponent<UParticleSystemComponent>();
+	UParticleSystemComponent* NewParticles = SetupAssociatedComponent<UParticleSystemComponent>(OwnerCharacter->GetMesh());
 	if (NewParticles != nullptr)
 	{
 		NewParticles->SetRelativeLocationAndRotation(CompLoc, CompRot);
@@ -131,7 +131,7 @@ UParticleSystemComponent* UFlightEffectsComponent::SetupParticleSystemComponent(
 
 UNiagaraComponent* UFlightEffectsComponent::SetupNiagaraComponent(UNiagaraSystem* NiagaraSystemAsset, FVector CompLoc, FRotator CompRot)
 {
-	UNiagaraComponent* NewNiagara = SetupAssociatedComponent<UNiagaraComponent>();
+	UNiagaraComponent* NewNiagara = SetupAssociatedComponent<UNiagaraComponent>(OwnerCharacter->GetMesh());
 	if (NewNiagara != nullptr)
 	{
 		NewNiagara->SetRelativeLocationAndRotation(CompLoc, CompRot);
@@ -143,7 +143,7 @@ UNiagaraComponent* UFlightEffectsComponent::SetupNiagaraComponent(UNiagaraSystem
 
 UAudioComponent* UFlightEffectsComponent::SetupAudioComponent(USoundBase* AudioSound, FVector CompLoc, FRotator CompRot)
 {
-	UAudioComponent* NewAudio = SetupAssociatedComponent<UAudioComponent>();
+	UAudioComponent* NewAudio = SetupAssociatedComponent<UAudioComponent>(OwnerCharacter->GetMesh());
 	if (NewAudio != nullptr)
 	{
 		NewAudio->SetRelativeLocationAndRotation(CompLoc, CompRot);

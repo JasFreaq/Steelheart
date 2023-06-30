@@ -31,6 +31,22 @@ void UFlightCollisionComponent::OnCharacterHit(UPrimitiveComponent* HitComponent
 	}
 }
 
+void UFlightCollisionComponent::InitializeFlightComponent()
+{
+	Super::InitializeFlightComponent();
+
+	FieldSystem = SetupAssociatedComponent<UFieldSystemComponent>(OwnerCharacter->GetRootComponent());
+	
+	CollisionSphere = SetupAssociatedComponent<USphereComponent>(FieldSystem);
+	CollisionSphere->SetSphereRadius(SphereRadius);
+
+	RadialFalloff = SetupAssociatedComponent<URadialFalloff>(nullptr);
+		
+	RadialVector = SetupAssociatedComponent<URadialVector>(nullptr);
+		
+	CullingField = SetupAssociatedComponent<UCullingField>(nullptr);
+}
+
 void UFlightCollisionComponent::Explode()
 {
 	FVector SphereLoc = CollisionSphere->GetComponentLocation();

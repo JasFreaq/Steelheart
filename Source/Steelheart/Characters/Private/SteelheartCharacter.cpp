@@ -76,8 +76,7 @@ ASteelheartCharacter::ASteelheartCharacter()
 	FlightEffects = CreateDefaultSubobject<UFlightEffectsComponent>(TEXT("FlightEffectsComponent"));
 	
 	FlightCollision = CreateDefaultSubobject<UFlightCollisionComponent>(TEXT("FlightCollisionComponent"));
-	InitializeCollision();
-
+	
 	bLocomotionEnabled = true;
 }
 
@@ -329,26 +328,6 @@ void ASteelheartCharacter::LookUpAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
-}
-
-void ASteelheartCharacter::InitializeCollision()
-{
-	FieldSystem = CreateDefaultSubobject<UFieldSystemComponent>(TEXT("FieldSystemComponent"));
-	FieldSystem->SetupAttachment(RootComponent);
-	FlightCollision->SetFieldSystem(FieldSystem);
-
-	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
-	CollisionSphere->SetupAttachment(FieldSystem);
-	FlightCollision->SetCollisionSphere(CollisionSphere);
-
-	RadialFalloff = CreateDefaultSubobject<URadialFalloff>(TEXT("RadialFalloff"));
-	FlightCollision->SetRadialFalloff(RadialFalloff);
-
-	RadialVector = CreateDefaultSubobject<URadialVector>(TEXT("RadialVector"));
-	FlightCollision->SetRadialVector(RadialVector);
-
-	CullingField = CreateDefaultSubobject<UCullingField>(TEXT("CullingField"));
-	FlightCollision->SetCullingField(CullingField);
 }
 
 void ASteelheartCharacter::UpdateLocomotion(float DeltaSeconds)

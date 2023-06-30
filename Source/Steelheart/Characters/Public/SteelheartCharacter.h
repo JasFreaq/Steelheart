@@ -117,8 +117,6 @@ protected:
 	void LookUpAtRate(float Rate);
 
 private:
-	void InitializeCollision();
-
 	void UpdateLocomotion(float DeltaSeconds);
 
 	void UpdateBlendRate();

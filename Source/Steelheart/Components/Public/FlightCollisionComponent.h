@@ -37,32 +37,28 @@ public:
 	UFUNCTION()
 		void OnCharacterHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	FORCEINLINE void SetFieldSystem(UFieldSystemComponent* Field) { FieldSystem = Field; }
+protected:
+	virtual void InitializeFlightComponent() override;
 
-	FORCEINLINE void SetCollisionSphere(USphereComponent* Sphere) { CollisionSphere = Sphere; }
-
-	FORCEINLINE void SetRadialFalloff(URadialFalloff* Falloff) { RadialFalloff = Falloff; }
-
-	FORCEINLINE void SetRadialVector(URadialVector* Vector) { RadialVector = Vector; }
-
-	FORCEINLINE void SetCullingField(UCullingField* Culling) { CullingField = Culling; }
-	
 private:
 	void Explode();
 
 	UFUNCTION()
 		void ResetHit();
 
-	UPROPERTY(EditDefaultsOnly, Category = FlightCollision)
+	UPROPERTY(EditDefaultsOnly, Category = CollisionParameters)
+		float SphereRadius = 1800.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = CollisionParameters)
 		float FalloffMagnitude = 500000.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = FlightCollision)
+	UPROPERTY(EditDefaultsOnly, Category = CollisionParameters)
 		float VectorMagnitude = 1000.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = FlightCollision)
+	UPROPERTY(EditDefaultsOnly, Category = CollisionParameters)
 		FName DestructibleTag = "Destructible";
 
-	UPROPERTY(EditDefaultsOnly, Category = FlightCollision)
+	UPROPERTY(EditDefaultsOnly, Category = CollisionParameters)
 		float HitBufferTime = 0.8f;
 
 	FTimerHandle HitBufferTimerHandle;

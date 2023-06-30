@@ -38,7 +38,7 @@ protected:
 	UCharacterMovementComponent* CharacterMovement = nullptr;
 
 	template<typename T>
-	T* SetupAssociatedComponent()
+	T* SetupAssociatedComponent(USceneComponent* ParentComp)
 	{
 		UActorComponent* NewComp = GetOwner()->AddComponentByClass(T::StaticClass(), true,
 			GetOwner()->GetActorTransform(), true);
@@ -47,12 +47,13 @@ protected:
 		{
 			if (USceneComponent* SceneComp = Cast<USceneComponent>(NewComp))
 			{
-				SceneComp->SetupAttachment(OwnerCharacter->GetMesh());
-				SceneComp->SetAutoActivate(false);
-				SceneComp->RegisterComponent();
-
-				return TypedComp;
+				SceneComp->SetupAttachment(ParentComp);
 			}
+
+			NewComp->SetAutoActivate(false);
+			NewComp->RegisterComponent();
+
+			return TypedComp;
 		}
 
 		return nullptr;
