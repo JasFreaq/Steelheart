@@ -27,7 +27,7 @@ protected:
 		
 private:
 	void InitializeFlightComponent();
-
+		
 protected:
 	ACharacter* OwnerCharacter = nullptr;
 
@@ -38,4 +38,25 @@ protected:
 	UCapsuleComponent* CapsuleComponent = nullptr;
 
 	UCharacterMovementComponent* CharacterMovement = nullptr;
+
+	template<typename T>
+	T* SetupAssociatedComponent()
+	{
+		UActorComponent* NewComp = GetOwner()->AddComponentByClass(T::StaticClass(), true,
+			GetOwner()->GetActorTransform(), true);
+
+		if (T* TypedComp = Cast<T>(NewComp))
+		{
+			if (USceneComponent* SceneComp = Cast<USceneComponent>(NewComp))
+			{
+				SceneComp->SetupAttachment(OwnerCharacter->GetMesh());
+				SceneComp->SetAutoActivate(false);
+				SceneComp->RegisterComponent();
+
+				return TypedComp;
+			}
+		}
+
+		return nullptr;
+	}
 };

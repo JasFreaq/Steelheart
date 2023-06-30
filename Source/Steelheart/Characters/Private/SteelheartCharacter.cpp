@@ -14,7 +14,6 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
-#include "Particles/ParticleSystemComponent.h"
 #include "Steelheart/Components/Public/FlightCollisionComponent.h"
 #include "Steelheart/Components/Public/FlightLocomotionComponent.h"
 #include "Steelheart/Components/Public/FlightTakeoffComponent.h"
@@ -75,8 +74,7 @@ ASteelheartCharacter::ASteelheartCharacter()
 	FlightTakeoff->GetTakeoffReleaseDelegate()->BindUFunction(this, "ReleaseTakeoff");
 
 	FlightEffects = CreateDefaultSubobject<UFlightEffectsComponent>(TEXT("FlightEffectsComponent"));
-	InitializeEffects();
-
+	
 	FlightCollision = CreateDefaultSubobject<UFlightCollisionComponent>(TEXT("FlightCollisionComponent"));
 	InitializeCollision();
 
@@ -91,6 +89,8 @@ void ASteelheartCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	GetCapsuleComponent()->OnComponentHit.AddDynamic(FlightCollision, &UFlightCollisionComponent::OnCharacterHit);
+
+	FlightEffects->InitializeEffects();
 }
 
 void ASteelheartCharacter::Tick(float DeltaSeconds)
@@ -331,39 +331,6 @@ void ASteelheartCharacter::LookUpAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
-}
-
-void ASteelheartCharacter::InitializeEffects()
-{
-	SonicBoomParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("SonicBoomParticles"));
-	SonicBoomParticles->SetAutoActivate(false);
-	SonicBoomParticles->SetupAttachment(GetMesh());
-	FlightEffects->SetSonicBoom(SonicBoomParticles);
-
-	DiveTrailParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("DiveTrailParticles"));
-	DiveTrailParticles->SetAutoActivate(false);
-	DiveTrailParticles->SetupAttachment(GetMesh());
-	FlightEffects->SetDiveTrail(DiveTrailParticles);
-	
-	HoverNiagara = CreateDefaultSubobject<UNiagaraComponent>(TEXT("HoverNiagara"));
-	HoverNiagara->SetAutoActivate(false);
-	HoverNiagara->SetupAttachment(GetMesh());
-	FlightEffects->SetHover(HoverNiagara);
-
-	DashTrailNiagara = CreateDefaultSubobject<UNiagaraComponent>(TEXT("DashTrailNiagara"));
-	DashTrailNiagara->SetAutoActivate(false);
-	DashTrailNiagara->SetupAttachment(GetMesh());
-	FlightEffects->SetDashTrail(DashTrailNiagara);
-
-	TakeoffChargeParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("TakeoffChargeParticles"));
-	TakeoffChargeParticles->SetAutoActivate(false);
-	TakeoffChargeParticles->SetupAttachment(GetMesh());
-	FlightEffects->SetTakeoffCharge(TakeoffChargeParticles);
-
-	WindAudio = CreateDefaultSubobject<UAudioComponent>(TEXT("AudioComponent"));
-	WindAudio->SetAutoActivate(false);
-	WindAudio->SetupAttachment(GetMesh());
-	FlightEffects->SetWindAudio(WindAudio);
 }
 
 void ASteelheartCharacter::InitializeCollision()

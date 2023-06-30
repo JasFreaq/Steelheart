@@ -18,6 +18,18 @@ UFlightEffectsComponent::UFlightEffectsComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
+void UFlightEffectsComponent::InitializeEffects()
+{
+	SonicBoomParticles = SetupParticleSystemComponent(SonicBoomEffect);
+	DiveTrailParticles = SetupParticleSystemComponent(DiveTrailEffect);
+	TakeoffChargeParticles = SetupParticleSystemComponent(TakeoffChargeEffect);
+
+	HoverNiagara = SetupNiagaraComponent(HoverEffect);
+	DashTrailNiagara = SetupNiagaraComponent(DashTrailEffect);
+
+	WindAudio = SetupAudioComponent(WindSound);
+}
+
 void UFlightEffectsComponent::ActivateSonicBoom()
 {
 	SonicBoomParticles->SetRelativeRotation(SonicBoomDefaultOrientation);
@@ -50,8 +62,8 @@ void UFlightEffectsComponent::ActivateDiveTrail()
 
 void UFlightEffectsComponent::ActivateHardLanding(FVector LandLocation)
 {
-	UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, HardLandingEffect, LandLocation);
-	UGameplayStatics::SpawnSoundAttached(LandSound, OwnerCharacter->GetMesh());
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, LandEffect, LandLocation);
+	UGameplayStatics::SpawnSoundAttached(DiveLandSound, OwnerCharacter->GetMesh());
 }
 
 void UFlightEffectsComponent::ActivateDiveLand(FVector LandLocation)
@@ -65,7 +77,8 @@ void UFlightEffectsComponent::ActivateDiveLand(FVector LandLocation)
 		SonicBoomAudio->Stop();
 		SonicBoomAudio = nullptr;
 	}
-	UGameplayStatics::SpawnSoundAttached(LandSound, OwnerCharacter->GetMesh());
+
+	UGameplayStatics::SpawnSoundAttached(DiveLandSound, OwnerCharacter->GetMesh());
 }
 
 void UFlightEffectsComponent::ToggleDashTrail(bool Enable)
@@ -99,4 +112,40 @@ void UFlightEffectsComponent::ToggleTakeOffCharge(bool Enable, bool Activate)
 			UGameplayStatics::SpawnSoundAttached(SonicBoomSound, OwnerCharacter->GetMesh());
 		}
 	}
+}
+
+UParticleSystemComponent* UFlightEffectsComponent::SetupParticleSystemComponent(UParticleSystem* ParticleTemplate)
+{
+	UParticleSystemComponent* NewParticles = SetupAssociatedComponent<UParticleSystemComponent>();
+	if (NewParticles != nullptr)
+	{
+		NewParticles->SetRelativeLocation(FVector(0.f, 0.f, 89.f));
+		NewParticles->SetTemplate(ParticleTemplate);
+	}
+
+	return NewParticles;
+}
+
+UNiagaraComponent* UFlightEffectsComponent::SetupNiagaraComponent(UNiagaraSystem* NiagaraSystemAsset)
+{
+	UNiagaraComponent* NewNiagara = SetupAssociatedComponent<UNiagaraComponent>();
+	if (NewNiagara != nullptr)
+	{
+		NewNiagara->SetRelativeLocation(FVector(0.f, 0.f, 89.f));
+		NewNiagara->SetAsset(NiagaraSystemAsset);
+	}
+
+	return NewNiagara;
+}
+
+UAudioComponent* UFlightEffectsComponent::SetupAudioComponent(USoundBase* AudioSound)
+{
+	UAudioComponent* NewAudio = SetupAssociatedComponent<UAudioComponent>();
+	if (NewAudio != nullptr)
+	{
+		NewAudio->SetRelativeLocation(FVector(0.f, 0.f, 89.f));
+		NewAudio->SetSound(AudioSound);
+	}
+
+	return NewAudio;
 }

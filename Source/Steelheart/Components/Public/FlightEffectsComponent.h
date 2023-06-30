@@ -6,6 +6,7 @@
 #include "FlightComponent.h"
 #include "FlightEffectsComponent.generated.h"
 
+class UParticleSystem;
 class UParticleSystemComponent;
 class UNiagaraSystem;
 class UNiagaraComponent;
@@ -32,18 +33,8 @@ class STEELHEART_API UFlightEffectsComponent : public UFlightComponent
 public:	
 	// Sets default values for this component's properties
 	UFlightEffectsComponent();
-
-	FORCEINLINE void SetSonicBoom(UParticleSystemComponent* SonicBoom) { SonicBoomParticles = SonicBoom; }
-
-	FORCEINLINE void SetDiveTrail(UParticleSystemComponent* DiveTrail) { DiveTrailParticles = DiveTrail; }
-
-	FORCEINLINE void SetTakeoffCharge(UParticleSystemComponent* TakeoffCharge) { TakeoffChargeParticles = TakeoffCharge; }
-
-	FORCEINLINE void SetHover(UNiagaraComponent* Hover) { HoverNiagara = Hover; }
-
-	FORCEINLINE void SetDashTrail(UNiagaraComponent* DashTrail) { DashTrailNiagara = DashTrail; }
-
-	FORCEINLINE void SetWindAudio(UAudioComponent* Wind) { WindAudio = Wind; }
+	
+	void InitializeEffects();
 
 	void ActivateSonicBoom();
 
@@ -62,33 +53,61 @@ public:
 	void ToggleTakeOffCharge(bool Enable, bool Activate = false);
 
 private:
-	UPROPERTY(EditDefaultsOnly, Category = FlightEffects)
+	//Misc Flight
+
+	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
+		UParticleSystem* TakeoffChargeEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
 		UNiagaraSystem* HoverEffect;
 
-	UPROPERTY(EditDefaultsOnly, Category = FlightEffects)
+	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
+		UNiagaraSystem* DashTrailEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
 		UNiagaraSystem* DodgeEffect;
 
-	UPROPERTY(EditDefaultsOnly, Category = DiveEffects)
-		UNiagaraSystem* HardLandingEffect;
+	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
+		UNiagaraSystem* LandEffect;
 
-	UPROPERTY(EditDefaultsOnly, Category = DiveEffects)
-		UNiagaraSystem* DiveLandEffect;
+	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
+		USoundBase* WindSound;
 
-	UPROPERTY(EditDefaultsOnly, Category = DashEffects)
+	//Sonic Boom
+
+	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
+		UParticleSystem* SonicBoomEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
 		USoundBase* SonicBoomSound;
 
-	UPROPERTY(EditDefaultsOnly, Category = DiveEffects)
-		USoundBase* LandSound;
-		
-	UPROPERTY(EditDefaultsOnly, Category = DashEffects)
+	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
 		FRotator SonicBoomDefaultOrientation;
 
-	UPROPERTY(EditDefaultsOnly, Category = DiveEffects)
+	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
 		FRotator SonicBoomDiveOrientation;
 
-	UPROPERTY(EditDefaultsOnly, Category = TakeoffEffects)
+	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
 		FRotator SonicBoomTakeoffOrientation;
 
-	UPROPERTY(EditDefaultsOnly, Category = DashEffects)
+	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
 		float SonicBoomSoundStartTime = 1.f;
+
+	//Dive
+
+	UPROPERTY(EditDefaultsOnly, Category = DiveEffect)
+		UParticleSystem* DiveTrailEffect;
+
+	UPROPERTY(EditDefaultsOnly, Category = DiveEffect)
+		UNiagaraSystem* DiveLandEffect;
+	
+	UPROPERTY(EditDefaultsOnly, Category = DiveEffect)
+		USoundBase* DiveLandSound;
+
+		
+	UParticleSystemComponent* SetupParticleSystemComponent(UParticleSystem* ParticleTemplate);
+
+	UNiagaraComponent* SetupNiagaraComponent(UNiagaraSystem* NiagaraSystemAsset);
+
+	UAudioComponent* SetupAudioComponent(USoundBase* AudioSound);
 };
