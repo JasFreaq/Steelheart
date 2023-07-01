@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright notice
 
 #pragma once
 
@@ -7,7 +7,7 @@
 #include "FlightLandingAnimNotify.generated.h"
 
 /**
- * 
+ * Custom animation notify for flight landing.
  */
 UCLASS()
 class STEELHEART_API UFlightLandingAnimNotify : public UAnimNotify
@@ -15,5 +15,11 @@ class STEELHEART_API UFlightLandingAnimNotify : public UAnimNotify
 	GENERATED_BODY()
 
 public:
+	/**
+	 * Function called when the animation reaches this notify.
+	 *
+	 * @param MeshComp The skeletal mesh component playing the animation.
+	 * @param Animation The animation sequence being played.
+	 */
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
 };

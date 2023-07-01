@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "Steelheart/Components/Public/FlightTakeoffComponent.h"
 
 #include "GameFramework/Character.h"
@@ -10,10 +7,11 @@
 // Sets default values for this component's properties
 UFlightTakeoffComponent::UFlightTakeoffComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
+	// Set this component to be initialized when the game starts, and to be ticked every frame. You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
+	// Bind the function delegates
 	TakeOffLoopTimerDelegate.BindUFunction(this, "LoopTakeOff");
 	TakeOffEndTimerDelegate.BindUFunction(this, "EndTakeOff");
 }
@@ -22,6 +20,7 @@ void UFlightTakeoffComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Retrieve information from the animation montage
 	if (ensure(TakeOffMontage != nullptr))
 	{
 		BaseBlendOutTime = TakeOffMontage->BlendOut.GetBlendTime();
@@ -42,6 +41,7 @@ void UFlightTakeoffComponent::TickComponent(float DeltaTime, ELevelTick TickType
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	// Apply takeoff force and calculate release force
 	if (bIsTakingOff)
 	{
 		CharacterMovement->AddForce(FVector::UpVector * CurrentTakeOffForce);
@@ -54,21 +54,25 @@ void UFlightTakeoffComponent::TickComponent(float DeltaTime, ELevelTick TickType
 
 void UFlightTakeoffComponent::EngageTakeOff()
 {
+	// Initiate takeoff if conditions are met
 	if (ensure(TakeOffMontage != nullptr) &&
 		OwnerCharacter->GetCharacterMovement()->IsMovingOnGround() && !bIsTakeOffInitiating)
 	{
 		bIsTakeOffInitiating = true;
 		FlightLocomotionInterface->SetLocomotionEnabled(false);
 
+		// Start the takeoff animation
 		TakeOffMontage->BlendOut.SetBlendTime(BaseBlendOutTime);
 		OwnerCharacter->PlayAnimMontage(TakeOffMontage);
-				
-		GetWorld()->GetTimerManager().SetTimer(TakeOffLoopTimerHandle, TakeOffLoopTimerDelegate, EngageSectionLength, false);;
+
+		// Trigger the loop timer
+		GetWorld()->GetTimerManager().SetTimer(TakeOffLoopTimerHandle, TakeOffLoopTimerDelegate, EngageSectionLength, false);
 	}
 }
 
 void UFlightTakeoffComponent::ReleaseTakeOff()
 {
+	// Release takeoff if initiated
 	if (ensure(TakeOffMontage != nullptr) && bIsTakeOffInitiating)
 	{
 		bIsTakeOffInitiating = false;
@@ -76,6 +80,7 @@ void UFlightTakeoffComponent::ReleaseTakeOff()
 
 		if (bIsTakeOffCharged)
 		{
+			// Complete the takeoff process
 			bIsTakeOffLooping = false;
 			bIsTakeOffCharged = false;
 			bIsTakingOff = true;
@@ -88,8 +93,9 @@ void UFlightTakeoffComponent::ReleaseTakeOff()
 
 			SectionLength = ReleaseSectionLength;
 		}
-		else 
+		else
 		{
+			// Cancel the takeoff initiation
 			TakeOffMontage->BlendOut.SetBlendTime(EngageSectionLength / 2);
 			OwnerCharacter->StopAnimMontage(TakeOffMontage);
 			OnReleaseTakeoff.ExecuteIfBound(false);
@@ -98,34 +104,39 @@ void UFlightTakeoffComponent::ReleaseTakeOff()
 			GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
 		}
 
-		GetWorld()->GetTimerManager().SetTimer(TakeOffEndTimerHandle, TakeOffEndTimerDelegate, SectionLength, false);;
+		// Trigger the end timer
+		GetWorld()->GetTimerManager().SetTimer(TakeOffEndTimerHandle, TakeOffEndTimerDelegate, SectionLength, false);
 	}
 }
 
 void UFlightTakeoffComponent::LoopTakeOff()
 {
+	// Loop the takeoff animation if not already looping
 	if (ensure(TakeOffMontage != nullptr))
 	{
 		if (bIsTakeOffLooping)
 		{
+			// Takeoff is charged, stop looping
 			bIsTakeOffCharged = true;
-
 			GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
 		}
 		else
 		{
+			// Start looping the takeoff animation
 			bIsTakeOffLooping = true;
-
 			OwnerCharacter->PlayAnimMontage(TakeOffMontage, RATE_SCALE, LoopSectionName);
-		
+
+			// Reset and restart the loop timer
 			GetWorld()->GetTimerManager().ClearTimer(TakeOffLoopTimerHandle);
-			GetWorld()->GetTimerManager().SetTimer(TakeOffLoopTimerHandle, TakeOffLoopTimerDelegate, LoopSectionLength, false);;
+			GetWorld()->GetTimerManager().SetTimer(TakeOffLoopTimerHandle, TakeOffLoopTimerDelegate, LoopSectionLength, false);
+			;
 		}
 	}
 }
 
 void UFlightTakeoffComponent::EndTakeOff()
 {
+	// Finish the takeoff process
 	if (ensure(TakeOffMontage != nullptr))
 	{
 		bIsTakingOff = false;

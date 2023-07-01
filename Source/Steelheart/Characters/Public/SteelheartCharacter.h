@@ -7,8 +7,6 @@
 #include "Steelheart/Interfaces/Public/FlightLocomotionInterface.h"
 #include "SteelheartCharacter.generated.h"
 
-class UNiagaraComponent;
-
 UCLASS(config = Game)
 class ASteelheartCharacter : public ACharacter, public IFlightLocomotionInterface
 {
@@ -26,58 +24,28 @@ class ASteelheartCharacter : public ACharacter, public IFlightLocomotionInterfac
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
 		class UFlightLocomotionComponent* FlightLocomotion;
 
-	/** Flight takeoff */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
-		class UFlightTakeoffComponent* FlightTakeoff;
-
 	/** Flight effects */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
 		class UFlightEffectsComponent* FlightEffects;
+
+	/** Flight takeoff */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
+		class UFlightTakeoffComponent* FlightTakeoff;
 
 	/** Flight collision */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = FlightLocomotion, meta = (AllowPrivateAccess = "true"))
 		class UFlightCollisionComponent* FlightCollision;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DashEffects, meta = (AllowPrivateAccess = "true"))
-		UParticleSystemComponent* SonicBoomParticles;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DiveEffects, meta = (AllowPrivateAccess = "true"))
-		UParticleSystemComponent* DiveTrailParticles;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = TakeoffEffects, meta = (AllowPrivateAccess = "true"))
-		UParticleSystemComponent* TakeoffChargeParticles;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = HoverEffects, meta = (AllowPrivateAccess = "true"))
-		UNiagaraComponent* HoverNiagara;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = DashEffects, meta = (AllowPrivateAccess = "true"))
-		UNiagaraComponent* DashTrailNiagara;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = SoundEffects, meta = (AllowPrivateAccess = "true"))
-		UAudioComponent* WindAudio;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = FlightCollision, meta = (AllowPrivateAccess = "true"))
-		class UFieldSystemComponent* FieldSystem;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = FlightCollision, meta = (AllowPrivateAccess = "true"))
-		class USphereComponent* CollisionSphere;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = FlightCollision, meta = (AllowPrivateAccess = "true"))
-		class URadialFalloff* RadialFalloff;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = FlightCollision, meta = (AllowPrivateAccess = "true"))
-		class URadialVector* RadialVector;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = FlightCollision, meta = (AllowPrivateAccess = "true"))
-		class UCullingField* CullingField;
-
 public:
 	ASteelheartCharacter();
-		
+
+	// Override function from IFlightLocomotionInterface to get the camera component
 	FORCEINLINE virtual UCameraComponent* GetCameraComponent() override { return FollowCamera; }
 
+	// Override function from IFlightLocomotionInterface to check if character is dashing
 	FORCEINLINE virtual bool IsDashing() override { return bIsDashing; }
 
+	// Override function from IFlightLocomotionInterface to set locomotion enabled or disabled
 	FORCEINLINE virtual void SetLocomotionEnabled(bool Enabled) override { bLocomotionEnabled = Enabled; }
 
 protected:
@@ -90,7 +58,7 @@ protected:
 	// End of APawn interface
 
 	void HandleFlyInput();
-	
+
 	void HandleDashInput();
 
 	void HandleTakeoffEngageInput();
@@ -103,57 +71,75 @@ protected:
 
 	/** Called for upwards/downwards input */
 	void MoveUp(float Value);
-	
-	/** 
-	 * Called via input to turn at a given rate. 
+
+	/**
+	 * Called via input to turn at a given rate.
 	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
 	 */
 	void TurnAtRate(float Rate);
 
 	/**
-	 * Called via input to turn look up/down at a given rate. 
+	 * Called via input to turn look up/down at a given rate.
 	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
 	 */
 	void LookUpAtRate(float Rate);
 
 private:
+	// Update the character's locomotion based on the given time
 	void UpdateLocomotion(float DeltaSeconds);
 
+	// Update the blend rate for locomotion animations
 	void UpdateBlendRate();
 
+	// Record the speed when the character starts to stop
 	void RecordStoppingSpeed();
 
+	// Update the character's speeds based on the given time
 	void UpdateSpeeds(float DeltaSeconds);
 
+	// Move the character in a walking state
 	void Walk();
 
+	// Stop the character from walking
 	void StopWalking();
 
+	// Initiate a dash action
 	void Dash();
 
+	// Stop the character from dashing
 	void StopDashing();
-		
+
+	// Called when the character has landed on the ground
 	virtual void Landed(const FHitResult& Hit) override;
 
+	// Called when the character is walking off a ledge
 	virtual void OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal, const FVector& PreviousLocation, float TimeDelta) override;
 
+	// Called when the character has reached the apex of a jump
 	virtual void NotifyJumpApex() override;
-		
+
+	// Handle the dive action
 	UFUNCTION()
 		void Dive();
 
+	// Handle the landing after a dive
 	UFUNCTION()
 		void LandDive(FVector LandLocation);
 
+	// Release the takeoff action, activating or deactivating it
 	UFUNCTION()
 		void ReleaseTakeoff(bool Activate);
 
+	// Start the camera boom lerp
 	void StartCameraBoomLerp();
 
+	// Stop the camera boom lerp
 	void StopCameraBoomLerp();
 
+	// Process the camera boom lerp based on the given time
 	void ProcessCameraBoomLerp(float DeltaSeconds);
 
+	// Inverse the camera boom lerp
 	void InverseCameraBoomLerp();
 
 public:
@@ -165,6 +151,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
 		float BaseLookUpRate;
 
+	// Speed required for the character to perform a leap
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Leaping)
 		float SpeedRequiredForLeap = 2500.f;
 
@@ -176,14 +163,16 @@ public:
 
 	UPROPERTY(BlueprintReadOnly, Category = Locomotion)
 		float SpeedWhenStopping;
-	
+
 	UPROPERTY(BlueprintReadOnly, Category = Locomotion)
 		bool bIsDashing;
 
 private:
+	// Animation montage to play when the character starts a regular jump
 	UPROPERTY(EditDefaultsOnly, Category = JumpAnimations)
 		UAnimMontage* JumpStartMontage = nullptr;
 
+	// Animation montage to play when the character starts a leap
 	UPROPERTY(EditDefaultsOnly, Category = JumpAnimations)
 		UAnimMontage* LeapStartMontage = nullptr;
 
@@ -195,10 +184,10 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float DashJumpZVelocity = 1200.f;
-	
+
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float DashSpeed = 3000.f;
-		
+
 	UPROPERTY(EditDefaultsOnly, Category = Dashing)
 		float DashAcceleration = 50000.f;
 
@@ -216,9 +205,9 @@ private:
 	float MaxSpeedTarget;
 
 	float RunSpeed;
-		
+
 	float BaseAcceleration;
-	
+
 	float BaseJumpZVelocity;
 
 	float CameraBoomBaseLength;
@@ -228,7 +217,7 @@ private:
 	float CameraBoomLerpTimeCounter = 0.f;
 
 	float CameraBoomLerpAlpha = 0.f;
-		
+
 	bool bRecordedStoppingSpeed;
 
 	bool bProcessDashLerp;

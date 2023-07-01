@@ -6,6 +6,7 @@
 #include "FlightComponent.h"
 #include "FlightEffectsComponent.generated.h"
 
+// Forward declarations
 class UParticleSystem;
 class UParticleSystemComponent;
 class UNiagaraSystem;
@@ -16,24 +17,28 @@ class STEELHEART_API UFlightEffectsComponent : public UFlightComponent
 {
 	GENERATED_BODY()
 
+	// Particle system components for various effects
 	UParticleSystemComponent* SonicBoomParticles;
 
 	UParticleSystemComponent* DiveTrailParticles;
 
 	UParticleSystemComponent* TakeoffChargeParticles;
-	
+
+	// Niagara components for hover and dash trail effects
 	UNiagaraComponent* HoverNiagara;
 
 	UNiagaraComponent* DashTrailNiagara;
 
+	// Audio components for wind and sonic boom sounds
 	UAudioComponent* WindAudio;
 
 	UAudioComponent* SonicBoomAudio;
 
-public:	
+public:
 	// Sets default values for this component's properties
 	UFlightEffectsComponent();
-	
+
+	// Functions to activate various flight effects
 	void ActivateSonicBoom();
 
 	void ActivateHover();
@@ -51,11 +56,10 @@ public:
 	void ToggleTakeOffCharge(bool Enable, bool Activate = false);
 
 protected:
-
 	virtual void InitializeFlightComponent() override;
 
 private:
-	//Misc Flight
+	// Miscellaneous Flight
 
 	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
 		UParticleSystem* TakeoffChargeEffect;
@@ -68,7 +72,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
 		UNiagaraSystem* DashTrailEffect;
-	
+
 	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
 		FRotator DashTrailOrientation = FRotator(0, 90, 0);
 
@@ -81,7 +85,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = MiscFlightEffect)
 		USoundBase* WindSound;
 
-	//Sonic Boom
+	// Sonic Boom
 
 	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
 		UParticleSystem* SonicBoomEffect;
@@ -107,18 +111,18 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = SonicBoomEffect)
 		float SonicBoomSoundStartTime = 1.f;
 
-	//Dive
+	// Dive
 
 	UPROPERTY(EditDefaultsOnly, Category = DiveEffect)
 		UParticleSystem* DiveTrailEffect;
 
 	UPROPERTY(EditDefaultsOnly, Category = DiveEffect)
 		UNiagaraSystem* DiveLandEffect;
-	
+
 	UPROPERTY(EditDefaultsOnly, Category = DiveEffect)
 		USoundBase* DiveLandSound;
 
-		
+	// Helper functions for setting up particle system, Niagara, and audio components
 	UParticleSystemComponent* SetupParticleSystemComponent(UParticleSystem* ParticleTemplate, FVector CompLoc = FVector(0, 0, 0), FRotator CompRot = FRotator(0, 0, 0));
 
 	UNiagaraComponent* SetupNiagaraComponent(UNiagaraSystem* NiagaraSystemAsset, FVector CompLoc = FVector(0, 0, 0), FRotator CompRot = FRotator(0, 0, 0));
