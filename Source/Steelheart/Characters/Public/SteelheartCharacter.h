@@ -73,10 +73,28 @@ protected:
 	void MoveUp(float Value);
 
 	/**
+	* Called via input to turn the character by a given value.
+	* @param Value The turning value to apply to the character's rotation.
+	*              A positive value represents turning right, while a negative value represents turning left.
+	*              The value is not normalized and can be any arbitrary turning rate.
+	*/
+	void Turn(float Value);
+
+
+	/**
 	 * Called via input to turn at a given rate.
 	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
 	 */
 	void TurnAtRate(float Rate);
+
+	/**
+	* Called via input to adjust the pitch of the character's view.
+	* @param Value The pitch adjustment value to apply to the character's view.
+	*              A positive value represents looking up, while a negative value represents looking down.
+	*              The value is not normalized and can be any arbitrary pitch adjustment rate.
+	*/
+	void LookUp(float Value);
+
 
 	/**
 	 * Called via input to turn look up/down at a given rate.
@@ -144,15 +162,31 @@ private:
 
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = CameraHandling)
 		float BaseTurnRate;
 
 	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Camera)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = CameraHandling)
 		float BaseLookUpRate;
 
+	/**
+	* Mouse button used for mouse rotation.
+	* Determines the mouse button that needs to be pressed to activate mouse rotation.
+	* By default, it is set to the left mouse button.
+	*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = CameraHandling)
+		FKey MouseRotationKey = EKeys::LeftMouseButton;
+
+	/**
+	* Interpolation speed for mouse rotation.
+	* Determines how quickly the character's rotation interpolates when smoothly turning with the mouse.
+	* Higher values result in faster interpolation and smoother turning, while lower values yield slower interpolation and more gradual turning.
+	*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = CameraHandling)
+		float MouseRotationInterpSpeed = 10.f;
+
 	// Speed required for the character to perform a leap
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Leaping)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Locomotion)
 		float SpeedRequiredForLeap = 2500.f;
 
 	UPROPERTY(BlueprintReadOnly, Category = Locomotion)
@@ -176,28 +210,28 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = JumpAnimations)
 		UAnimMontage* LeapStartMontage = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, Category = Walking)
+	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
 		float WalkSpeed = 150.f;
-
-	UPROPERTY(EditDefaultsOnly, Category = LocomotionRatios)
+	
+	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
 		float MaxGroundSpeedInterpSpeed = 4.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = Dashing)
+	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
 		float DashJumpZVelocity = 1200.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = Dashing)
+	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
 		float DashSpeed = 3000.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = Dashing)
+	UPROPERTY(EditDefaultsOnly, Category = Locomotion)
 		float DashAcceleration = 50000.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = CameraBoomLerp)
-		float DashLerpTime = 1.f;
+	UPROPERTY(EditDefaultsOnly, Category = CameraHandling)
+		float DashCameraLerpTime = 1.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = CameraBoomLerp)
-		float DiveLerpTime = 0.4f;
+	UPROPERTY(EditDefaultsOnly, Category = CameraHandling)
+		float DiveCameraLerpTime = 0.4f;
 
-	UPROPERTY(EditDefaultsOnly, Category = CameraBoomLerp)
+	UPROPERTY(EditDefaultsOnly, Category = CameraHandling)
 		float CameraBoomTargetLength = 900.f;
 
 	FVector FrameInputs;
@@ -217,9 +251,13 @@ private:
 	float CameraBoomLerpTimeCounter = 0.f;
 
 	float CameraBoomLerpAlpha = 0.f;
+	
+	float LastTurnValue = 0.f;
+
+	float LastLookUpValue = 0.f;
 
 	bool bRecordedStoppingSpeed;
-
+	
 	bool bProcessDashLerp;
 
 	bool bProcessStopDashLerp;

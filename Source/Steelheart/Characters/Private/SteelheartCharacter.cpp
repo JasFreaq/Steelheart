@@ -142,9 +142,9 @@ void ASteelheartCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindAxis("MoveUp", this, &ASteelheartCharacter::MoveUp);
 
 	// Bind the rotation axes for character rotation
-	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
+	PlayerInputComponent->BindAxis("Turn", this, &ASteelheartCharacter::Turn);
 	PlayerInputComponent->BindAxis("TurnRate", this, &ASteelheartCharacter::TurnAtRate);
-	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
+	PlayerInputComponent->BindAxis("LookUp", this, &ASteelheartCharacter::LookUp);
 	PlayerInputComponent->BindAxis("LookUpRate", this, &ASteelheartCharacter::LookUpAtRate);
 }
 
@@ -174,6 +174,7 @@ void ASteelheartCharacter::HandleFlyInput()
 
 			FlightLocomotion->StopDivebomb();
 			FlightLocomotion->Fly();
+
 			FlightEffects->ActivateHover();
 
 			if (bIsDashing)
@@ -184,6 +185,7 @@ void ASteelheartCharacter::HandleFlyInput()
 		else // Jump
 		{
 			Super::Jump();
+
 			GetCharacterMovement()->bNotifyApex = true;
 		}
 	}
@@ -315,16 +317,48 @@ void ASteelheartCharacter::MoveUp(float Value)
 	FrameInputs.Z = FMath::Abs(Value); // Record the absolute value of input for Z-axis movement
 }
 
+void ASteelheartCharacter::Turn(float Value)
+{
+	// Check if the assigned mouse button is currently pressed
+	if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(MouseRotationKey))
+	{
+		// Interpolate the current turn value towards the target turn value over time
+		float CurrentTurnValue = FMath::FInterpTo(LastTurnValue, Value, GetWorld()->GetDeltaSeconds(), MouseRotationInterpSpeed);
+
+		// Apply the smooth rotation by gradually adjusting the yaw of the character over time
+		AddControllerYawInput(CurrentTurnValue * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+
+		// Store the current turn value as the last turn value for interpolation in the next frame
+		LastTurnValue = CurrentTurnValue;
+	}
+}
+
 void ASteelheartCharacter::TurnAtRate(float Rate)
 {
-	// Calculate the delta for this frame from the rate information
+	// Add the rotation input for this frame based on the rate information
 	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+}
+
+void ASteelheartCharacter::LookUp(float Value)
+{
+	// Check if the assigned mouse button is currently pressed
+	if (GetWorld()->GetFirstPlayerController()->IsInputKeyDown(MouseRotationKey))
+	{
+		// Interpolate the current look-up value towards the target look-up value over time
+		float CurrentLookUpValue = FMath::FInterpTo(LastLookUpValue, Value, GetWorld()->GetDeltaSeconds(), MouseRotationInterpSpeed);
+
+		// Apply the smooth rotation by gradually adjusting the pitch of the character over time
+		AddControllerPitchInput(CurrentLookUpValue * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+
+		// Store the current look-up value as the last look-up value for interpolation in the next frame
+		LastLookUpValue = CurrentLookUpValue;
+	}
 }
 
 void ASteelheartCharacter::LookUpAtRate(float Rate)
 {
-	// Calculate the delta for this frame from the rate information
-	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+	// Add the rotation input for this frame based on the rate information
+	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());	
 }
 
 void ASteelheartCharacter::UpdateLocomotion(float DeltaSeconds)
@@ -416,7 +450,7 @@ void ASteelheartCharacter::Dash()
 	GetCharacterMovement()->JumpZVelocity = DashJumpZVelocity;
 
 	// Set the camera boom lerp time to the dash lerp time and start the lerping process
-	CameraBoomLerpTime = DashLerpTime;
+	CameraBoomLerpTime = DashCameraLerpTime;
 	StartCameraBoomLerp();
 }
 
@@ -494,7 +528,7 @@ void ASteelheartCharacter::Dive()
 	FlightEffects->ActivateDiveTrail();
 
 	// Set the camera boom lerp time to the dive lerp time and start the lerping process
-	CameraBoomLerpTime = DiveLerpTime;
+	CameraBoomLerpTime = DiveCameraLerpTime;
 	StartCameraBoomLerp();
 }
 
@@ -595,6 +629,6 @@ void ASteelheartCharacter::ProcessCameraBoomLerp(float DeltaSeconds)
 void ASteelheartCharacter::InverseCameraBoomLerp()
 {
 	// Inverse the lerp time counter and alpha values to reverse the lerp process
-	CameraBoomLerpTimeCounter = DashLerpTime - CameraBoomLerpTimeCounter;
+	CameraBoomLerpTimeCounter = DashCameraLerpTime - CameraBoomLerpTimeCounter;
 	CameraBoomLerpAlpha = 1.f - CameraBoomLerpAlpha;
 }

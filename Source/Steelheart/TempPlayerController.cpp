@@ -10,7 +10,7 @@ UProceduralMeshComponent* ATempPlayerController::CreateProceduralMeshComponent(A
 
 	//CompClass can be a BP
 	UProceduralMeshComponent* ProcComp = NewObject<UProceduralMeshComponent>(Owning, UProceduralMeshComponent::StaticClass(), YourObjectName);
-	//UPrimitiveComponent* NewComp = ConstructObject<UPrimitiveComponent>(CompClass, this, YourObjectName);
+
 	if (!ProcComp)
 	{
 		return NULL;
