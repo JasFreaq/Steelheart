@@ -331,6 +331,14 @@ void ASteelheartCharacter::Turn(float Value)
 		// Store the current turn value as the last turn value for interpolation in the next frame
 		LastTurnValue = CurrentTurnValue;
 	}
+	else //reverse the functionality to interpolate back to zero
+	{
+		float CurrentTurnValue = FMath::FInterpTo(LastTurnValue, 0, GetWorld()->GetDeltaSeconds(), MouseRotationInterpSpeed);
+
+		AddControllerYawInput(CurrentTurnValue * BaseTurnRate * GetWorld()->GetDeltaSeconds());
+
+		LastTurnValue = CurrentTurnValue;
+	}
 }
 
 void ASteelheartCharacter::TurnAtRate(float Rate)
@@ -351,6 +359,14 @@ void ASteelheartCharacter::LookUp(float Value)
 		AddControllerPitchInput(CurrentLookUpValue * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 
 		// Store the current look-up value as the last look-up value for interpolation in the next frame
+		LastLookUpValue = CurrentLookUpValue;
+	}
+	else //reverse the functionality to interpolate back to zero
+	{
+		float CurrentLookUpValue = FMath::FInterpTo(LastLookUpValue, 0, GetWorld()->GetDeltaSeconds(), MouseRotationInterpSpeed);
+
+		AddControllerPitchInput(CurrentLookUpValue * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+
 		LastLookUpValue = CurrentLookUpValue;
 	}
 }
